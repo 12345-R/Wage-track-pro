@@ -7,7 +7,7 @@ interface LoginProps {
   onLoginSuccess: (email: string) => void;
 }
 
-type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm';
+type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm' | 'register-success';
 
 interface PasswordInputProps {
   value: string;
@@ -113,11 +113,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Direct registration without OTP
     const newUser: User = { username: email, email, password };
     storageService.saveUser(newUser);
-    setSuccess('Account created successfully! You can now sign in.');
-    setMode('login');
+    
+    // Switch to success screen instead of direct login redirect
+    setMode('register-success');
     resetFields();
   };
 
@@ -214,9 +214,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      {/* Form Interaction Side - Updated with Light Wallpaper */}
+      {/* Form Interaction Side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden bg-slate-100">
-        {/* Background Wallpaper */}
         <img 
           src="https://images.unsplash.com/photo-1554034483-04fda0d3507b?auto=format&fit=crop&q=80&w=1920" 
           alt="Soft Light Background" 
@@ -225,7 +224,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-indigo-100/40 backdrop-blur-[2px]"></div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Mobile Logo Visibility */}
           <div className="lg:hidden flex justify-center mb-10">
             <div className="flex items-center space-x-3 text-indigo-600">
               <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-200">
@@ -343,6 +341,22 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
             )}
 
+            {mode === 'register-success' && (
+              <div className="animate-in zoom-in-95 duration-500 text-center py-6">
+                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100/50">
+                  <i className="fa-solid fa-circle-check text-4xl"></i>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-3">Registration Successful!</h3>
+                <p className="text-slate-500 text-sm font-medium mb-8">Your administrative account has been created. You can now access the full suite of WageTrack Pro features.</p>
+                <button 
+                  onClick={() => setMode('login')}
+                  className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                >
+                  Proceed to Sign In
+                </button>
+              </div>
+            )}
+
             {mode === 'forgot' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="mb-8">
@@ -403,13 +417,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             )}
 
             {/* Notifications */}
-            {error && (
+            {error && mode !== 'register-success' && (
               <div className="bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-wider p-4 rounded-2xl flex items-center mt-8 animate-in shake">
                 <i className="fa-solid fa-triangle-exclamation mr-3 text-sm"></i>
                 {error}
               </div>
             )}
-            {success && (
+            {success && mode !== 'register-success' && (
               <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-wider p-4 rounded-2xl flex items-center mt-8">
                 <i className="fa-solid fa-circle-check mr-3 text-sm"></i>
                 {success}
