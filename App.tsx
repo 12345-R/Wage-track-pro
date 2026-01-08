@@ -119,7 +119,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pb-24 md:pb-0">
+    <div className="min-h-screen bg-slate-50 flex flex-col pb-28 md:pb-0">
       {/* Top Header - Simplified */}
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 md:px-8 sticky top-0 z-[60] justify-between">
         <div className="flex items-center space-x-2 text-indigo-600">
@@ -160,9 +160,9 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-[100] px-2 py-3 md:hidden">
-        <div className="flex items-center justify-around max-w-md mx-auto">
+      {/* Mobile Bottom Navigation - Redesigned with Dark Color and Larger Buttons */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
+        <div className="flex items-center justify-around max-w-lg mx-auto">
           {mainNavItems.map((item) => (
             <button
               key={item.id}
@@ -170,16 +170,16 @@ const App: React.FC = () => {
                 setCurrentView(item.id as View);
                 setIsMenuOpen(false);
               }}
-              className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
-                currentView === item.id ? 'text-indigo-600' : 'text-slate-400'
+              className={`flex flex-col items-center space-y-1.5 transition-all duration-300 ${
+                currentView === item.id ? 'text-white' : 'text-slate-400'
               }`}
             >
-              <div className={`w-12 h-8 rounded-2xl flex items-center justify-center transition-all ${
-                currentView === item.id ? 'bg-indigo-50' : 'bg-transparent'
+              <div className={`w-16 h-10 rounded-2xl flex items-center justify-center transition-all ${
+                currentView === item.id ? 'bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'bg-transparent'
               }`}>
-                <i className={`fa-solid ${item.icon} text-lg`}></i>
+                <i className={`fa-solid ${item.icon} text-xl`}></i>
               </div>
-              <span className={`text-[10px] font-bold tracking-tight ${currentView === item.id ? 'opacity-100' : 'opacity-60'}`}>
+              <span className={`text-[11px] font-semibold tracking-tight ${currentView === item.id ? 'opacity-100' : 'opacity-50'}`}>
                 {item.label}
               </span>
             </button>
@@ -187,16 +187,16 @@ const App: React.FC = () => {
           
           <button
             onClick={() => setIsMenuOpen(true)}
-            className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
-              isMenuOpen ? 'text-indigo-600' : 'text-slate-400'
+            className={`flex flex-col items-center space-y-1.5 transition-all duration-300 ${
+              isMenuOpen ? 'text-white' : 'text-slate-400'
             }`}
           >
-            <div className={`w-12 h-8 rounded-2xl flex items-center justify-center transition-all ${
-              isMenuOpen ? 'bg-indigo-50' : 'bg-transparent'
+            <div className={`w-16 h-10 rounded-2xl flex items-center justify-center transition-all ${
+              isMenuOpen ? 'bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'bg-transparent'
             }`}>
-              <i className="fa-solid fa-bars text-lg"></i>
+              <i className="fa-solid fa-bars text-xl"></i>
             </div>
-            <span className={`text-[10px] font-bold tracking-tight ${isMenuOpen ? 'opacity-100' : 'opacity-60'}`}>
+            <span className={`text-[11px] font-semibold tracking-tight ${isMenuOpen ? 'opacity-100' : 'opacity-50'}`}>
               Menu
             </span>
           </button>
