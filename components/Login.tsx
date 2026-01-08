@@ -18,6 +18,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  const [showPassword, setShowPassword] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [userOtp, setUserOtp] = useState('');
   const [showMockNotification, setShowMockNotification] = useState(false);
@@ -36,6 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setPassword('');
     setConfirmPassword('');
     setUserOtp('');
+    setShowPassword(false);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -136,6 +138,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const PasswordInput = ({ value, onChange, placeholder, label }: { value: string, onChange: (v: string) => void, placeholder: string, label?: string }) => (
+    <div className="relative">
+      {label && <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>}
+      <div className="relative">
+        <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+        <input 
+          type={showPassword ? 'text' : 'password'} 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-12 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
+          placeholder={placeholder}
+          required
+        />
+        <button 
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+        >
+          <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-white flex overflow-hidden">
       {/* Visual / Brand Side */}
@@ -193,9 +219,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      {/* Form Interaction Side */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50 relative">
-        {/* Floating OTP Notification - Improved Mock Notification */}
+      {/* Form Interaction Side - Updated with Light Wallpaper */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden bg-slate-100">
+        {/* Background Wallpaper */}
+        <img 
+          src="https://images.unsplash.com/photo-1554034483-04fda0d3507b?auto=format&fit=crop&q=80&w=1920" 
+          alt="Soft Light Background" 
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-indigo-100/40 backdrop-blur-[2px]"></div>
+
+        {/* Floating OTP Notification */}
         {showMockNotification && (
           <div className="fixed top-8 right-8 z-[100] animate-in slide-in-from-right-full fade-in duration-500 max-w-xs">
             <div className="bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-indigo-100 overflow-hidden">
@@ -214,7 +248,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md relative z-10">
           {/* Mobile Logo Visibility */}
           <div className="lg:hidden flex justify-center mb-10">
             <div className="flex items-center space-x-3 text-indigo-600">
@@ -225,10 +259,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <div className="bg-white/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white">
             {/* Header Tabs */}
             {(mode === 'login' || mode === 'register') && (
-              <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
+              <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-8">
                 <button 
                   onClick={() => { setMode('login'); resetFields(); }}
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
@@ -271,11 +305,20 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="relative">
                       <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
                       <input 
-                        type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-5 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
+                        type={showPassword ? 'text' : 'password'} 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-12 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
                         placeholder="••••••••"
                         required
                       />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                      >
+                        <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
                     </div>
                   </div>
                   <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-[0.98]">
@@ -301,24 +344,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Create Password</label>
-                    <input 
-                      type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
-                    <input 
-                      type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
+                  <PasswordInput 
+                    label="Create Password" 
+                    value={password} 
+                    onChange={setPassword} 
+                    placeholder="••••••••" 
+                  />
+                  <PasswordInput 
+                    label="Confirm Password" 
+                    value={confirmPassword} 
+                    onChange={setConfirmPassword} 
+                    placeholder="••••••••" 
+                  />
                   <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 mt-4">
                     Send Verification Code
                   </button>
@@ -392,24 +429,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <p className="text-slate-500 text-sm mt-2 font-medium">Create a new secure password for your administrative account.</p>
                 </div>
                 <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">New Password</label>
-                    <input 
-                      type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">Confirm New Password</label>
-                    <input 
-                      type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
+                  <PasswordInput 
+                    label="New Password" 
+                    value={password} 
+                    onChange={setPassword} 
+                    placeholder="••••••••" 
+                  />
+                  <PasswordInput 
+                    label="Confirm New Password" 
+                    value={confirmPassword} 
+                    onChange={setConfirmPassword} 
+                    placeholder="••••••••" 
+                  />
                   <button type="submit" className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 mt-4">
                     Restore Access
                   </button>
