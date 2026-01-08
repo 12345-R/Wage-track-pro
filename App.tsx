@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppState, Employee, Shift, View } from './types';
 import { storageService } from './services/storageService';
+import { APP_VERSION } from './constants';
 import Dashboard from './components/Dashboard';
 import EmployeeList from './components/EmployeeList';
 import ShiftLog from './components/ShiftLog';
@@ -23,6 +24,20 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Automatic App Refresh & Update Trigger
+  // If the developer updates the APP_VERSION in constants.ts, this will force a one-time
+  // refresh to ensure the browser clears stale assets and loads the new logic.
+  useEffect(() => {
+    const lastSeenVersion = localStorage.getItem('wagetrack_app_version');
+    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
+      localStorage.setItem('wagetrack_app_version', APP_VERSION);
+      // Hard refresh to update code and styles
+      window.location.reload();
+    } else {
+      localStorage.setItem('wagetrack_app_version', APP_VERSION);
+    }
+  }, []);
+
   // Real-time clock effect
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -30,7 +45,7 @@ const App: React.FC = () => {
   }, []);
 
   // Synchronize state with current user and storage
-  // This ensures all changes are saved to persistent storage (localStorage) immediately
+  // This ensures all changes (shifts, employee edits, etc.) are saved instantly
   useEffect(() => {
     if (currentUser) {
       storageService.save(currentUser, state);
@@ -107,7 +122,6 @@ const App: React.FC = () => {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Updated navigation for mobile bottom bar
   const mainNavItems = [
     { id: 'dashboard', label: 'Home', icon: 'fa-house' },
     { id: 'employees', label: 'Employees', icon: 'fa-users' },
@@ -175,7 +189,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - Redesigned with Larger Fonts (+2 size) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {mainNavItems.map((item) => (
@@ -185,16 +199,16 @@ const App: React.FC = () => {
                 setCurrentView(item.id as View);
                 setIsMenuOpen(false);
               }}
-              className={`flex flex-col items-center space-y-1.5 transition-all duration-300 ${
+              className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
                 currentView === item.id ? 'text-white' : 'text-slate-400'
               }`}
             >
-              <div className={`w-16 h-10 rounded-2xl flex items-center justify-center transition-all ${
+              <div className={`w-16 h-11 rounded-2xl flex items-center justify-center transition-all ${
                 currentView === item.id ? 'bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'bg-transparent'
               }`}>
-                <i className={`fa-solid ${item.icon} text-xl`}></i>
+                <i className={`fa-solid ${item.icon} text-2xl`}></i>
               </div>
-              <span className={`text-[11px] font-semibold tracking-tight ${currentView === item.id ? 'opacity-100' : 'opacity-50'}`}>
+              <span className={`text-[13px] font-bold tracking-tight ${currentView === item.id ? 'opacity-100' : 'opacity-50'}`}>
                 {item.label}
               </span>
             </button>
@@ -202,16 +216,16 @@ const App: React.FC = () => {
           
           <button
             onClick={() => setIsMenuOpen(true)}
-            className={`flex flex-col items-center space-y-1.5 transition-all duration-300 ${
+            className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
               isMenuOpen ? 'text-white' : 'text-slate-400'
             }`}
           >
-            <div className={`w-16 h-10 rounded-2xl flex items-center justify-center transition-all ${
+            <div className={`w-16 h-11 rounded-2xl flex items-center justify-center transition-all ${
               isMenuOpen ? 'bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'bg-transparent'
             }`}>
-              <i className="fa-solid fa-bars text-xl"></i>
+              <i className="fa-solid fa-bars text-2xl"></i>
             </div>
-            <span className={`text-[11px] font-semibold tracking-tight ${isMenuOpen ? 'opacity-100' : 'opacity-50'}`}>
+            <span className={`text-[13px] font-bold tracking-tight ${isMenuOpen ? 'opacity-100' : 'opacity-50'}`}>
               Menu
             </span>
           </button>
@@ -249,7 +263,7 @@ const App: React.FC = () => {
                 </button>
                 
                 <button 
-                  onClick={() => { /* Account settings could be added */ }}
+                  onClick={() => { /* Account settings */ }}
                   className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
                 >
                   <i className="fa-solid fa-gear text-xl"></i>
@@ -266,7 +280,7 @@ const App: React.FC = () => {
               </div>
 
               <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] pt-4">
-                WageTrack Pro • v4.2.0
+                WageTrack Pro • v{APP_VERSION}
               </p>
             </div>
           </div>
