@@ -99,12 +99,12 @@ const App: React.FC = () => {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const navItems = [
-    { id: 'dashboard', label: 'Overview', icon: 'fa-chart-pie' },
-    { id: 'employees', label: 'Employees', icon: 'fa-users-gear' },
-    { id: 'shifts', label: 'Shift Logs', icon: 'fa-calendar-check' },
+  // Updated navigation for mobile bottom bar
+  const mainNavItems = [
+    { id: 'dashboard', label: 'Home', icon: 'fa-house' },
+    { id: 'employees', label: 'Employees', icon: 'fa-users' },
+    { id: 'shifts', label: 'Time Clock', icon: 'fa-clock-rotate-left' },
     { id: 'monthly-reports', label: 'Monthly Sheet', icon: 'fa-file-invoice-dollar' },
-    { id: 'ai-insights', label: 'AI Analytics', icon: 'fa-brain' }
   ];
 
   const renderView = () => {
@@ -119,128 +119,184 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center px-4 md:px-6 sticky top-0 z-[60] justify-between">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
-          >
-            <i className={`fa-solid ${isMenuOpen ? 'fa-xmark' : 'fa-bars'} text-xl`}></i>
-          </button>
-          <div className="flex items-center space-x-2 text-indigo-600">
-            <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-md">
-              <i className="fa-solid fa-calculator text-sm"></i>
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-800">WageTrack<span className="text-indigo-600">Pro</span></span>
+    <div className="min-h-screen bg-slate-50 flex flex-col pb-24 md:pb-0">
+      {/* Top Header - Simplified */}
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 md:px-8 sticky top-0 z-[60] justify-between">
+        <div className="flex items-center space-x-2 text-indigo-600">
+          <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100">
+            <i className="fa-solid fa-calculator text-xs"></i>
           </div>
+          <span className="text-lg font-black tracking-tight text-slate-800">WageTrack<span className="text-indigo-600">Pro</span></span>
         </div>
         
-        <div className="flex items-center space-x-6">
-          {/* Live Clock Component */}
-          <div className="hidden lg:flex items-center space-x-4 px-4 py-1.5 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="flex flex-col text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">
-                {currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-              </p>
-              <p className="text-sm font-black text-slate-800 tabular-nums tracking-tight leading-none">
-                {currentTime.getHours().toString().padStart(2, '0')}
-                <span className="animate-pulse text-indigo-400 mx-0.5">:</span>
-                {currentTime.getMinutes().toString().padStart(2, '0')}
-                <span className="text-[10px] ml-1 text-slate-400">
-                  {currentTime.getSeconds().toString().padStart(2, '0')}
-                </span>
-              </p>
-            </div>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+        <div className="flex items-center space-x-4">
+          <div className="hidden sm:flex flex-col text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">
+              {currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+            </p>
+            <p className="text-sm font-black text-slate-800 tabular-nums tracking-tight leading-none">
+              {currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}
+            </p>
           </div>
-
-          <div className="hidden sm:block text-right border-r border-slate-200 pr-6">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Login Identity</p>
-            <div className="flex items-center text-indigo-500 text-xs font-bold max-w-[180px] truncate">
-              <i className="fa-solid fa-circle-user mr-1.5 flex-shrink-0"></i>
-              <span className="truncate">{currentUser}</span>
-            </div>
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold border border-slate-200">
+            {currentUser?.charAt(0).toUpperCase()}
           </div>
-          
-          <button 
-            onClick={handleLogout}
-            className="text-slate-400 hover:text-rose-500 transition-colors text-sm font-semibold flex items-center space-x-2"
-          >
-            <i className="fa-solid fa-right-from-bracket"></i>
-            <span className="hidden sm:inline">Logout</span>
-          </button>
         </div>
       </header>
 
-      {isMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
-          onClick={() => setIsMenuOpen(false)}
-        ></div>
-      )}
-
-      <nav className={`fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-slate-200 z-50 transition-transform duration-300 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full shadow-none'} flex flex-col`}>
-        <div className="p-6 flex-1">
-          <div className="space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setCurrentView(item.id as View);
-                  setIsMenuOpen(false);
-                }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                  currentView === item.id 
-                    ? 'bg-indigo-50 text-indigo-600 font-bold' 
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                }`}
-              >
-                <i className={`fa-solid ${item.icon} text-lg w-6 ${currentView === item.id ? 'text-indigo-600' : 'text-slate-300 group-hover:text-slate-400'}`}></i>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-6 border-t border-slate-50 space-y-4">
-           <button 
-             onClick={handleLogout}
-             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all font-bold group"
-           >
-              <i className="fa-solid fa-right-from-bracket text-lg w-6 group-hover:translate-x-1 transition-transform"></i>
-              <span>Sign Out</span>
-           </button>
-
-           <div className="flex items-center space-x-3 pt-2">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold flex-shrink-0">
-                {currentUser?.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate" title={currentUser || ''}>{currentUser}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">Business Admin</p>
-              </div>
-           </div>
-        </div>
-      </nav>
-
-      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full transition-all duration-300">
-        <header className="mb-8">
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
-            {currentView.replace('-', ' ')}
+      {/* Main Content Area */}
+      <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full transition-all duration-300">
+        <header className="mb-6 px-1">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">
+            {currentView === 'dashboard' ? 'Dashboard' : currentView.replace('-', ' ')}
           </h1>
-          <p className="text-slate-500 text-sm font-medium">
-            {currentView === 'dashboard' ? 'Real-time overview of business payroll and hours.' : 'Manage your business resources effectively.'}
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">
+            {currentView === 'dashboard' ? 'Daily Performance' : 'Management Console'}
           </p>
         </header>
+        
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
           {renderView()}
         </div>
       </main>
 
-      <footer className="p-4 text-center border-t border-slate-200 bg-white">
-        <p className="text-slate-400 text-xs">WageTrack Pro &copy; {new Date().getFullYear()} • Secure Multi-Tenant Management</p>
-      </footer>
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-[100] px-2 py-3 md:hidden">
+        <div className="flex items-center justify-around max-w-md mx-auto">
+          {mainNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setCurrentView(item.id as View);
+                setIsMenuOpen(false);
+              }}
+              className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
+                currentView === item.id ? 'text-indigo-600' : 'text-slate-400'
+              }`}
+            >
+              <div className={`w-12 h-8 rounded-2xl flex items-center justify-center transition-all ${
+                currentView === item.id ? 'bg-indigo-50' : 'bg-transparent'
+              }`}>
+                <i className={`fa-solid ${item.icon} text-lg`}></i>
+              </div>
+              <span className={`text-[10px] font-bold tracking-tight ${currentView === item.id ? 'opacity-100' : 'opacity-60'}`}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+          
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
+              isMenuOpen ? 'text-indigo-600' : 'text-slate-400'
+            }`}
+          >
+            <div className={`w-12 h-8 rounded-2xl flex items-center justify-center transition-all ${
+              isMenuOpen ? 'bg-indigo-50' : 'bg-transparent'
+            }`}>
+              <i className="fa-solid fa-bars text-lg"></i>
+            </div>
+            <span className={`text-[10px] font-bold tracking-tight ${isMenuOpen ? 'opacity-100' : 'opacity-60'}`}>
+              Menu
+            </span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Slide-up Menu Modal (Drawer) */}
+      {isMenuOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] animate-in fade-in duration-300"
+            onClick={() => setIsMenuOpen(false)}
+          ></div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] z-[120] p-8 animate-in slide-in-from-bottom-full duration-500 shadow-2xl">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+            
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4 mb-8">
+                <div className="w-14 h-14 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-indigo-100">
+                  {currentUser?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-lg font-black text-slate-900 truncate max-w-[200px]">{currentUser}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Business Administrator</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <button 
+                  onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }}
+                  className="flex items-center space-x-4 p-4 rounded-2xl bg-indigo-50 text-indigo-600 font-bold transition-all hover:bg-indigo-100"
+                >
+                  <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                  <span>AI Analytics & Insights</span>
+                </button>
+                
+                <button 
+                  onClick={() => { /* Could add profile settings here */ }}
+                  className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
+                >
+                  <i className="fa-solid fa-gear text-xl"></i>
+                  <span>Account Settings</span>
+                </button>
+
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center space-x-4 p-4 rounded-2xl bg-rose-50 text-rose-600 font-bold transition-all hover:bg-rose-100"
+                >
+                  <i className="fa-solid fa-right-from-bracket text-xl"></i>
+                  <span>Sign Out Account</span>
+                </button>
+              </div>
+
+              <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] pt-4">
+                WageTrack Pro • v4.2.0
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Desktop Navigation - Hidden on Mobile */}
+      <nav className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 z-50 flex-col">
+        <div className="p-6 space-y-2 flex-1">
+          {mainNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setCurrentView(item.id as View)}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-bold ${
+                currentView === item.id 
+                  ? 'bg-indigo-50 text-indigo-600' 
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }`}
+            >
+              <i className={`fa-solid ${item.icon} text-lg w-6`}></i>
+              <span>{item.label}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentView('ai-insights')}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-bold ${
+              currentView === 'ai-insights' 
+                ? 'bg-indigo-50 text-indigo-600' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+            }`}
+          >
+            <i className="fa-solid fa-brain text-lg w-6"></i>
+            <span>AI Analytics</span>
+          </button>
+        </div>
+        <div className="p-6 border-t border-slate-100">
+           <button 
+             onClick={handleLogout}
+             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-all"
+           >
+              <i className="fa-solid fa-right-from-bracket text-lg w-6"></i>
+              <span>Logout</span>
+           </button>
+        </div>
+      </nav>
     </div>
   );
 };
