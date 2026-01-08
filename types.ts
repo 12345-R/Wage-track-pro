@@ -5,6 +5,7 @@ export interface Employee {
   role: string;
   hourlyRate: number;
   avatar: string;
+  emoji?: string; // Optional emoji identifier
 }
 
 export interface Shift {
@@ -20,7 +21,7 @@ export interface Shift {
 export interface User {
   username: string;
   password: string; 
-  email: string; // Added for password recovery
+  email: string; 
 }
 
 export interface AppState {

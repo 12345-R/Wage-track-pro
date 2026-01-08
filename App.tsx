@@ -39,9 +39,10 @@ const App: React.FC = () => {
     setCurrentUser(null);
     localStorage.removeItem('wagetrack_current_user');
     setCurrentView('dashboard');
+    setIsMenuOpen(false);
   };
 
-  const addEmployee = (empData: Omit<Employee, 'id' | 'avatar'>) => {
+  const addEmployee = (empData: Omit<Employee, 'id' | 'avatar'> & { emoji?: string }) => {
     const newEmp: Employee = {
       ...empData,
       id: Math.random().toString(36).substr(2, 9),
@@ -156,8 +157,8 @@ const App: React.FC = () => {
         ></div>
       )}
 
-      <nav className={`fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-slate-200 z-50 transition-transform duration-300 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full shadow-none'}`}>
-        <div className="p-6">
+      <nav className={`fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-slate-200 z-50 transition-transform duration-300 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full shadow-none'} flex flex-col`}>
+        <div className="p-6 flex-1">
           <div className="space-y-2">
             {navItems.map((item) => (
               <button
@@ -178,13 +179,23 @@ const App: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-50">
-           <div className="flex items-center space-x-3">
+
+        {/* Sidebar Footer Actions */}
+        <div className="p-6 border-t border-slate-50 space-y-4">
+           <button 
+             onClick={handleLogout}
+             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all font-bold group"
+           >
+              <i className="fa-solid fa-right-from-bracket text-lg w-6 group-hover:translate-x-1 transition-transform"></i>
+              <span>Sign Out</span>
+           </button>
+
+           <div className="flex items-center space-x-3 pt-2">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold">
                 {currentUser?.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800 truncate max-w-[150px]">{currentUser}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-800 truncate">{currentUser}</p>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">Business Admin</p>
               </div>
            </div>
