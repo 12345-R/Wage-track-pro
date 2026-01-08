@@ -1,14 +1,24 @@
 
 import { AppState, User } from '../types';
-import { STORAGE_KEY, INITIAL_EMPLOYEES } from '../constants';
+import { STORAGE_KEY, INITIAL_EMPLOYEES, APP_VERSION } from '../constants';
 
 const USERS_KEY = 'wagetrack_pro_users';
+const VERSION_KEY = 'wagetrack_app_version';
 
 export const storageService = {
   // Scoped Data Methods
   load: (username: string): AppState => {
     const userStorageKey = `${STORAGE_KEY}_${username}`;
     const saved = localStorage.getItem(userStorageKey);
+    
+    // Check for version update and handle refresh logic if needed
+    const lastVersion = localStorage.getItem(VERSION_KEY);
+    if (lastVersion !== APP_VERSION) {
+      console.log(`New version detected: ${APP_VERSION}. Syncing assets...`);
+      localStorage.setItem(VERSION_KEY, APP_VERSION);
+      // In a real environment, this might trigger a cache bust
+    }
+
     if (!saved) {
       return {
         employees: INITIAL_EMPLOYEES,
@@ -35,7 +45,25 @@ export const storageService = {
 
   saveUser: (user: User) => {
     const users = storageService.getUsers();
-    users.push(user);
+    const existingIndex = users.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+    
+    if (existingIndex > -1) {
+      users[existingIndex] = user;
+    } else {
+      users.push(user);
+    }
+    
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  },
+
+  updateUserPassword: (email: string, newPassword: string) => {
+    const users = storageService.getUsers();
+    const index = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    if (index !== -1) {
+      users[index].password = newPassword;
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      return true;
+    }
+    return false;
   }
 };

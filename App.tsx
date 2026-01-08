@@ -30,6 +30,7 @@ const App: React.FC = () => {
   }, []);
 
   // Synchronize state with current user and storage
+  // This ensures all changes are saved to persistent storage (localStorage) immediately
   useEffect(() => {
     if (currentUser) {
       storageService.save(currentUser, state);
@@ -57,6 +58,13 @@ const App: React.FC = () => {
     setState(prev => ({
       ...prev,
       employees: [...prev.employees, newEmp]
+    }));
+  };
+
+  const updateEmployee = (id: string, empData: Omit<Employee, 'id'>) => {
+    setState(prev => ({
+      ...prev,
+      employees: prev.employees.map(e => e.id === id ? { ...empData, id } : e)
     }));
   };
 
@@ -110,7 +118,14 @@ const App: React.FC = () => {
   const renderView = () => {
     switch(currentView) {
       case 'dashboard': return <Dashboard employees={state.employees} shifts={state.shifts} />;
-      case 'employees': return <EmployeeList employees={state.employees} onAdd={addEmployee} onDelete={deleteEmployee} />;
+      case 'employees': return (
+        <EmployeeList 
+          employees={state.employees} 
+          onAdd={addEmployee} 
+          onUpdate={updateEmployee}
+          onDelete={deleteEmployee} 
+        />
+      );
       case 'shifts': return <ShiftLog employees={state.employees} shifts={state.shifts} onAddShift={addShift} onUpdateShift={updateShift} onDeleteShift={deleteShift} />;
       case 'ai-insights': return <AIReport employees={state.employees} shifts={state.shifts} />;
       case 'monthly-reports': return <MonthlyReport employees={state.employees} shifts={state.shifts} />;
@@ -120,7 +135,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-28 md:pb-0">
-      {/* Top Header - Simplified */}
+      {/* Top Header */}
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 md:px-8 sticky top-0 z-[60] justify-between">
         <div className="flex items-center space-x-2 text-indigo-600">
           <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100">
@@ -160,7 +175,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation - Redesigned with Dark Color and Larger Buttons */}
+      {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {mainNavItems.map((item) => (
@@ -203,7 +218,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Slide-up Menu Modal (Drawer) */}
+      {/* Slide-up Menu Modal */}
       {isMenuOpen && (
         <>
           <div 
@@ -234,7 +249,7 @@ const App: React.FC = () => {
                 </button>
                 
                 <button 
-                  onClick={() => { /* Could add profile settings here */ }}
+                  onClick={() => { /* Account settings could be added */ }}
                   className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
                 >
                   <i className="fa-solid fa-gear text-xl"></i>
@@ -258,7 +273,7 @@ const App: React.FC = () => {
         </>
       )}
 
-      {/* Desktop Navigation - Hidden on Mobile */}
+      {/* Desktop Navigation */}
       <nav className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 z-50 flex-col">
         <div className="p-6 space-y-2 flex-1">
           {mainNavItems.map((item) => (

@@ -116,7 +116,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const newUser: User = { username: email, email, password };
     storageService.saveUser(newUser);
     
-    // Switch to success screen instead of direct login redirect
     setMode('register-success');
     resetFields();
   };
@@ -143,15 +142,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    const users = storageService.getUsers();
-    const userIndex = users.findIndex(u => u.email.toLowerCase() === resetEmail.toLowerCase());
+    const updated = storageService.updateUserPassword(resetEmail, password);
     
-    if (userIndex !== -1) {
-      users[userIndex].password = password;
-      localStorage.setItem('wagetrack_pro_users', JSON.stringify(users));
+    if (updated) {
       setSuccess('Security credentials updated! Please sign in.');
       setMode('login');
       resetFields();
+    } else {
+      setError('Something went wrong. Please try again.');
     }
   };
 
@@ -159,12 +157,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen bg-white flex overflow-hidden">
-      {/* Visual / Brand Side */}
+      {/* Visual Side */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden">
         <img 
           src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=80&w=1920" 
           alt="Business Management" 
-          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay scale-105 hover:scale-100 transition-transform duration-10000"
+          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/90 via-slate-900/60 to-transparent"></div>
         
@@ -183,15 +181,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   Manage your workforce with <span className="text-indigo-400">Precision.</span>
                 </h2>
                 <p className="text-slate-300 text-lg font-medium leading-relaxed">
-                  The ultimate hub for high-efficiency businesses tracking time, wages, and productivity in real-time.
+                  The hub for high-efficiency businesses tracking time, wages, and productivity in real-time.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 {[
-                  { icon: 'fa-clock', title: 'Smart Time Tracking', desc: 'Precise clock-in/out logs for up to 15 employees.' },
-                  { icon: 'fa-brain', title: 'AI-Powered Insights', desc: 'Predict budget trends and employee efficiency with Gemini.' },
-                  { icon: 'fa-file-invoice-dollar', title: 'Automated Payroll', desc: 'Export consolidated monthly sheets in one click.' }
+                  { icon: 'fa-clock', title: 'Smart Time Tracking', desc: 'Precise logs for your team.' },
+                  { icon: 'fa-brain', title: 'AI Insights', desc: 'Predict trends and efficiency with Gemini.' },
+                  { icon: 'fa-save', title: 'Auto Persistence', desc: 'Changes are saved instantly as you work.' }
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 max-w-sm">
                     <div className="bg-indigo-500/20 p-3 rounded-xl text-indigo-400">
@@ -206,34 +204,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
           </div>
-
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-widest flex items-center space-x-4">
-            <span>Trusted by 500+ Local Enterprises</span>
-            <div className="h-px bg-slate-800 flex-1"></div>
+          <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+            © 2024 WageTrack Pro • Enterprise Suite
           </div>
         </div>
       </div>
 
       {/* Form Interaction Side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden bg-slate-100">
-        <img 
-          src="https://images.unsplash.com/photo-1554034483-04fda0d3507b?auto=format&fit=crop&q=80&w=1920" 
-          alt="Soft Light Background" 
-          className="absolute inset-0 w-full h-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-indigo-100/40 backdrop-blur-[2px]"></div>
-
         <div className="w-full max-w-md relative z-10">
-          <div className="lg:hidden flex justify-center mb-10">
-            <div className="flex items-center space-x-3 text-indigo-600">
-              <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-200">
-                <i className="fa-solid fa-calculator text-2xl"></i>
-              </div>
-              <span className="text-2xl font-black tracking-tight text-slate-900">WageTrack<span className="text-indigo-600">Pro</span></span>
-            </div>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white">
+          <div className="bg-white/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl border border-white">
             {/* Header Tabs */}
             {(mode === 'login' || mode === 'register') && (
               <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-8">
@@ -254,46 +234,29 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             {mode === 'login' && (
               <div className="animate-in fade-in duration-500">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-slate-900 mb-2">Welcome Back</h3>
-                  <p className="text-slate-500 text-sm font-medium">Enter your credentials to access your administrative dashboard.</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-6">Welcome Back</h3>
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Work Email</label>
-                    <div className="relative">
-                      <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                      <input 
-                        type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-5 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
-                        placeholder="admin@business.com"
-                        required
-                      />
-                    </div>
+                    <input 
+                      type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 px-5 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
+                      placeholder="admin@business.com"
+                      required
+                    />
                   </div>
                   <div>
                     <div className="flex justify-between mb-2 px-1">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
-                      <button type="button" onClick={() => setMode('forgot')} className="text-[10px] font-bold text-indigo-600 hover:underline uppercase tracking-widest">Forgot Password?</button>
+                      <button type="button" onClick={() => setMode('forgot')} className="text-[10px] font-bold text-indigo-600 hover:underline uppercase tracking-widest">Forgot?</button>
                     </div>
-                    <div className="relative">
-                      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                      <input 
-                        type={showPassword ? 'text' : 'password'} 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-12 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
-                        placeholder="••••••••"
-                        required
-                      />
-                      <button 
-                        type="button"
-                        onClick={togglePasswordVisibility}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
-                      >
-                        <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                      </button>
-                    </div>
+                    <PasswordInput 
+                      value={password} 
+                      onChange={setPassword} 
+                      placeholder="••••••••" 
+                      showPassword={showPassword}
+                      onToggleVisible={togglePasswordVisibility}
+                    />
                   </div>
                   <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-[0.98]">
                     Authorize Access
@@ -304,10 +267,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             {mode === 'register' && (
               <div className="animate-in fade-in duration-500">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-slate-900 mb-2">Create Account</h3>
-                  <p className="text-slate-500 text-sm font-medium">Start managing up to 15 employees with our Pro tier.</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-6">Create Account</h3>
                 <form onSubmit={startRegistration} className="space-y-4">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Business Email</label>
@@ -342,12 +302,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             )}
 
             {mode === 'register-success' && (
-              <div className="animate-in zoom-in-95 duration-500 text-center py-6">
+              <div className="text-center py-6">
                 <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100/50">
                   <i className="fa-solid fa-circle-check text-4xl"></i>
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-3">Registration Successful!</h3>
-                <p className="text-slate-500 text-sm font-medium mb-8">Your administrative account has been created. You can now access the full suite of WageTrack Pro features.</p>
+                <h3 className="text-2xl font-black text-slate-900 mb-3">All Set!</h3>
+                <p className="text-slate-500 text-sm font-medium mb-8">Account created. All your data will be saved automatically.</p>
                 <button 
                   onClick={() => setMode('login')}
                   className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
@@ -359,10 +319,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             {mode === 'forgot' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-slate-900">Account Recovery</h3>
-                  <p className="text-slate-500 text-sm mt-2 font-medium">Don't worry, enter your email and we'll verify your identity.</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-6">Recovery</h3>
                 <form onSubmit={handleForgot} className="space-y-6">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Registered Email</label>
@@ -370,17 +327,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium"
                       placeholder="your@email.com"
-                      autoFocus
                       required
                     />
                   </div>
                   <div className="space-y-3">
                     <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
-                      Verify Account
+                      Verify Identity
                     </button>
-                    <button type="button" onClick={() => { setMode('login'); resetFields(); }} className="w-full text-slate-400 text-xs font-bold uppercase tracking-widest py-2 hover:text-slate-600 transition-colors">
-                      Back to Login
-                    </button>
+                    <button type="button" onClick={() => setMode('login')} className="w-full text-slate-400 text-xs font-bold uppercase py-2">Back</button>
                   </div>
                 </form>
               </div>
@@ -388,10 +342,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             {mode === 'reset-confirm' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-slate-900">Set New Password</h3>
-                  <p className="text-slate-500 text-sm mt-2 font-medium">Create a new secure password for your administrative account.</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-6">Reset Password</h3>
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <PasswordInput 
                     label="New Password" 
@@ -410,30 +361,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     onToggleVisible={togglePasswordVisibility}
                   />
                   <button type="submit" className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 mt-4">
-                    Restore Access
+                    Update & Restore
                   </button>
                 </form>
               </div>
             )}
 
-            {/* Notifications */}
-            {error && mode !== 'register-success' && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-wider p-4 rounded-2xl flex items-center mt-8 animate-in shake">
-                <i className="fa-solid fa-triangle-exclamation mr-3 text-sm"></i>
-                {error}
-              </div>
-            )}
-            {success && mode !== 'register-success' && (
-              <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-wider p-4 rounded-2xl flex items-center mt-8">
-                <i className="fa-solid fa-circle-check mr-3 text-sm"></i>
-                {success}
-              </div>
-            )}
+            {error && <div className="bg-rose-50 text-rose-600 text-[10px] font-black uppercase p-4 rounded-2xl mt-8 animate-bounce">{error}</div>}
+            {success && <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase p-4 rounded-2xl mt-8">{success}</div>}
           </div>
-
-          <p className="text-center text-slate-400 text-[10px] mt-10 uppercase font-black tracking-[0.2em]">
-            Enterprise Security v4.2 • Protected by AES-256
-          </p>
         </div>
       </div>
     </div>

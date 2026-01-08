@@ -1,11 +1,12 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Employee } from '../types';
 import { MAX_EMPLOYEES } from '../constants';
 
 interface EmployeeListProps {
   employees: Employee[];
   onAdd: (emp: Omit<Employee, 'id'>) => void;
+  onUpdate: (id: string, emp: Omit<Employee, 'id'>) => void;
   onDelete: (id: string) => void;
 }
 
@@ -15,7 +16,10 @@ const EMOJI_OPTIONS = [
   '🥷', '🦸‍♂️', '🦸‍♀️', '🧙‍♂️', '🧙‍♀️', '🧑‍🚀', '🧑‍🚒', '🤵', '👰', '🧕'
 ];
 
-const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete }) => {
+const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onUpdate, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('');
@@ -24,10 +28,37 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   
   // Confirmation states
-  const [confirmingAdd, setConfirmingAdd] = useState(false);
+  const [confirmingSubmit, setConfirmingSubmit] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form when editing starts
+  useEffect(() => {
+    if (editingId) {
+      const emp = employees.find(e => e.id === editingId);
+      if (emp) {
+        setNewName(emp.name);
+        setNewRole(emp.role);
+        setNewRate(emp.hourlyRate);
+        setSelectedEmoji(emp.emoji || EMOJI_OPTIONS[0]);
+        setCustomAvatar(emp.avatar);
+        setIsEditing(true);
+      }
+    } else {
+      resetFields();
+    }
+  }, [editingId, employees]);
+
+  const resetFields = () => {
+    setNewName('');
+    setNewRole('');
+    setNewRate(15);
+    setSelectedEmoji(EMOJI_OPTIONS[0]);
+    setCustomAvatar(null);
+    setIsEditing(false);
+    setEditingId(null);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,30 +75,32 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
     }
   };
 
-  const handleInitiateAdd = (e: React.FormEvent) => {
+  const handleInitiateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (employees.length >= MAX_EMPLOYEES) return;
+    if (!isEditing && employees.length >= MAX_EMPLOYEES) return;
     if (!newName || !newRole) return;
-    setConfirmingAdd(true);
+    setConfirmingSubmit(true);
   };
 
-  const finalizeAdd = () => {
+  const finalizeSubmit = () => {
     const avatar = customAvatar || `https://picsum.photos/seed/${newName.replace(/\s/g, '')}/150`;
-    onAdd({ 
+    const payload = { 
       name: newName, 
       role: newRole, 
       hourlyRate: newRate, 
       emoji: selectedEmoji,
       avatar: avatar
-    });
+    };
 
-    setNewName('');
-    setNewRole('');
-    setNewRate(15);
-    setSelectedEmoji(EMOJI_OPTIONS[0]);
-    setCustomAvatar(null);
+    if (isEditing && editingId) {
+      onUpdate(editingId, payload);
+    } else {
+      onAdd(payload);
+    }
+
+    resetFields();
     setShowAddForm(false);
-    setConfirmingAdd(false);
+    setConfirmingSubmit(false);
   };
 
   const finalizeDelete = () => {
@@ -77,13 +110,25 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
     }
   };
 
+  const startEdit = (emp: Employee) => {
+    setEditingId(emp.id);
+    setShowAddForm(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-800">Team Members ({employees.length}/{MAX_EMPLOYEES})</h2>
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
-          disabled={employees.length >= MAX_EMPLOYEES}
+          onClick={() => {
+            if (showAddForm) {
+              resetFields();
+              setShowAddForm(false);
+            } else {
+              setShowAddForm(true);
+            }
+          }}
+          disabled={!showAddForm && employees.length >= MAX_EMPLOYEES}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <i className={`fa-solid ${showAddForm ? 'fa-xmark' : 'fa-plus'} mr-2`}></i>
@@ -92,7 +137,14 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
       </div>
 
       {showAddForm && (
-        <form onSubmit={handleInitiateAdd} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">
+        <form onSubmit={handleInitiateSubmit} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between mb-6">
+             <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs">
+               {isEditing ? 'Editing Employee' : 'New Employee Profile'}
+             </h3>
+             {isEditing && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">ID: {editingId}</span>}
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-2">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Identity & Avatar</label>
@@ -114,7 +166,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                 </div>
                 <div className="relative group">
-                   <div className="w-16 h-16 bg-slate-50 border-2 border-slate-100 rounded-2xl flex items-center justify-center text-4xl shadow-sm group-hover:border-indigo-200 cursor-pointer">
+                   <div className="w-16 h-16 bg-slate-50 border-2 border-slate-100 rounded-2xl flex items-center justify-center text-4xl shadow-sm group-hover:border-indigo-200 cursor-pointer transition-colors">
                      {selectedEmoji}
                    </div>
                    <div className="absolute top-full left-0 mt-3 p-3 bg-white border border-slate-100 shadow-2xl rounded-2xl z-50 grid grid-cols-5 gap-2 w-56 animate-in zoom-in-95 invisible group-hover:visible group-focus-within:visible">
@@ -152,46 +204,51 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
           </div>
           <div className="mt-8 flex justify-end">
             <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-xl hover:bg-slate-800 transition-colors font-bold shadow-xl shadow-slate-100">
-              Save Member
+              {isEditing ? 'Save Changes' : 'Create Profile'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Confirmation Modals */}
-      {confirmingAdd && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      {/* Confirmation Modal */}
+      {confirmingSubmit && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mb-6 mx-auto">
-              <i className="fa-solid fa-user-plus text-2xl"></i>
+              <i className={`fa-solid ${isEditing ? 'fa-user-pen' : 'fa-user-plus'} text-2xl`}></i>
             </div>
-            <h3 className="text-xl font-black text-slate-800 text-center mb-2">Confirm New Member</h3>
+            <h3 className="text-xl font-black text-slate-800 text-center mb-2">
+              {isEditing ? 'Confirm Changes' : 'Confirm New Member'}
+            </h3>
             <div className="bg-slate-50 rounded-2xl p-4 mb-6 space-y-2">
               <p className="text-sm font-bold text-slate-800 flex justify-between"><span>Name:</span> <span>{newName}</span></p>
               <p className="text-sm text-slate-500 flex justify-between"><span>Role:</span> <span>{newRole}</span></p>
               <p className="text-sm text-slate-500 flex justify-between"><span>Rate:</span> <span>${newRate}/hr</span></p>
             </div>
             <div className="flex flex-col space-y-3">
-              <button onClick={finalizeAdd} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all">Confirm & Add</button>
-              <button onClick={() => setConfirmingAdd(false)} className="w-full text-slate-400 font-bold py-2 hover:text-slate-600">Cancel</button>
+              <button onClick={finalizeSubmit} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all">
+                {isEditing ? 'Confirm Update' : 'Confirm & Add'}
+              </button>
+              <button onClick={() => setConfirmingSubmit(false)} className="w-full text-slate-400 font-bold py-2 hover:text-slate-600">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
       {confirmingDelete && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-6 mx-auto">
               <i className="fa-solid fa-trash-can text-2xl"></i>
             </div>
             <h3 className="text-xl font-black text-slate-800 text-center mb-2">Delete Employee?</h3>
-            <p className="text-slate-500 text-center text-sm mb-6">
+            <p className="text-slate-500 text-center text-sm mb-6 leading-relaxed">
               This will permanently remove <strong>{employees.find(e => e.id === confirmingDelete)?.name}</strong> and all their associated shift history.
             </p>
             <div className="flex flex-col space-y-3">
-              <button onClick={finalizeDelete} className="w-full bg-rose-600 text-white font-bold py-4 rounded-2xl hover:bg-rose-700 transition-all">Yes, Delete Everything</button>
-              <button onClick={() => setConfirmingDelete(null)} className="w-full text-slate-400 font-bold py-2 hover:text-slate-600">Keep Employee</button>
+              <button onClick={finalizeDelete} className="w-full bg-rose-600 text-white font-bold py-4 rounded-2xl hover:bg-rose-700 transition-all">Yes, Delete Records</button>
+              <button onClick={() => setConfirmingDelete(null)} className="w-full text-slate-400 font-bold py-2 hover:text-slate-600">Cancel</button>
             </div>
           </div>
         </div>
@@ -214,15 +271,25 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onAdd, onDelete 
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-slate-900 truncate">{emp.name}</h3>
-                <p className="text-sm text-slate-500">{emp.role}</p>
-                <p className="text-xs font-semibold text-indigo-600 mt-1">${emp.hourlyRate}/hour</p>
+                <p className="text-sm text-slate-500 truncate">{emp.role}</p>
+                <p className="text-xs font-black text-indigo-600 mt-1 uppercase tracking-tighter">${emp.hourlyRate}/hr</p>
               </div>
-              <button 
-                onClick={() => setConfirmingDelete(emp.id)}
-                className="text-slate-200 hover:text-rose-500 transition-colors p-2"
-              >
-                <i className="fa-solid fa-trash-can"></i>
-              </button>
+              <div className="flex flex-col space-y-2">
+                <button 
+                  onClick={() => startEdit(emp)}
+                  className="text-slate-200 hover:text-indigo-600 transition-colors p-2"
+                  title="Edit Profile"
+                >
+                  <i className="fa-solid fa-pen"></i>
+                </button>
+                <button 
+                  onClick={() => setConfirmingDelete(emp.id)}
+                  className="text-slate-200 hover:text-rose-500 transition-colors p-2"
+                  title="Remove Staff"
+                >
+                  <i className="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </div>
           </div>
         ))}

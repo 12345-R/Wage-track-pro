@@ -2,6 +2,7 @@
 import { Employee } from './types';
 
 export const MAX_EMPLOYEES = 15;
+export const APP_VERSION = '4.2.5'; // Current stable version
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   { id: '1', name: 'Alex Rivera', role: 'Team Lead', hourlyRate: 25, avatar: 'https://picsum.photos/seed/alex/150' },
