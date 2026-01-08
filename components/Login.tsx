@@ -7,7 +7,7 @@ interface LoginProps {
   onLoginSuccess: (email: string) => void;
 }
 
-type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm' | 'otp-verify';
+type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm';
 
 interface PasswordInputProps {
   value: string;
@@ -18,7 +18,6 @@ interface PasswordInputProps {
   onToggleVisible: () => void;
 }
 
-// DEFINED OUTSIDE TO PREVENT RE-RENDERING REMOUNT TRAPS
 const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, placeholder, label, showPassword, onToggleVisible }) => (
   <div className="relative">
     {label && <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>}
@@ -53,9 +52,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [success, setSuccess] = useState('');
   
   const [showPassword, setShowPassword] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [userOtp, setUserOtp] = useState('');
-  const [showMockNotification, setShowMockNotification] = useState(false);
 
   const validateEmail = (emailStr: string) => {
     return String(emailStr)
@@ -70,7 +66,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setSuccess('');
     setPassword('');
     setConfirmPassword('');
-    setUserOtp('');
     setShowPassword(false);
   };
 
@@ -118,24 +113,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(otp);
-    setMode('otp-verify');
-    setShowMockNotification(true);
-    setTimeout(() => setShowMockNotification(false), 8000);
-  };
-
-  const verifyOtpAndRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (userOtp === generatedOtp) {
-      const newUser: User = { username: email, email, password };
-      storageService.saveUser(newUser);
-      setSuccess('Account verified! You can now access your dashboard.');
-      setMode('login');
-      resetFields();
-    } else {
-      setError('Invalid verification code. Check your mock notification.');
-    }
+    // Direct registration without OTP
+    const newUser: User = { username: email, email, password };
+    storageService.saveUser(newUser);
+    setSuccess('Account created successfully! You can now sign in.');
+    setMode('login');
+    resetFields();
   };
 
   const handleForgot = (e: React.FormEvent) => {
@@ -240,25 +223,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           className="absolute inset-0 w-full h-full object-cover opacity-30"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-indigo-100/40 backdrop-blur-[2px]"></div>
-
-        {/* Floating OTP Notification */}
-        {showMockNotification && (
-          <div className="fixed top-8 right-8 z-[100] animate-in slide-in-from-right-full fade-in duration-500 max-w-xs">
-            <div className="bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-indigo-100 overflow-hidden">
-              <div className="bg-indigo-600 px-4 py-2 flex justify-between items-center">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">Incoming Verification</span>
-                <i className="fa-solid fa-envelope text-indigo-200"></i>
-              </div>
-              <div className="p-4">
-                <p className="text-xs text-slate-500 mb-2 font-medium">From: WageTrack Security</p>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Authorization Code</p>
-                  <span className="text-2xl font-black text-indigo-600 tracking-[0.2em]">{generatedOtp}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="w-full max-w-md relative z-10">
           {/* Mobile Logo Visibility */}
@@ -373,38 +337,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     onToggleVisible={togglePasswordVisibility}
                   />
                   <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 mt-4">
-                    Send Verification Code
+                    Create Account
                   </button>
-                </form>
-              </div>
-            )}
-
-            {mode === 'otp-verify' && (
-              <div className="animate-in slide-in-from-right-4 duration-500">
-                <div className="text-center mb-10">
-                  <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-100">
-                    <i className="fa-solid fa-shield-check text-3xl"></i>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900">Two-Factor Security</h3>
-                  <p className="text-slate-500 text-sm mt-2 px-4">We've sent a 6-digit authorization code to <br /><strong className="text-slate-800">{email}</strong></p>
-                </div>
-                <form onSubmit={verifyOtpAndRegister} className="space-y-8">
-                  <input 
-                    type="text" 
-                    value={userOtp}
-                    onChange={(e) => setUserOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="• • • • • •"
-                    className="w-full text-center text-4xl font-black tracking-[0.4em] bg-slate-50 border border-slate-100 px-5 py-6 rounded-3xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-indigo-600"
-                    autoFocus
-                  />
-                  <div className="space-y-3">
-                    <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
-                      Verify & Activate
-                    </button>
-                    <button type="button" onClick={() => setMode('register')} className="w-full text-slate-400 text-xs font-bold uppercase tracking-widest py-2 hover:text-slate-600 transition-colors">
-                      Use a different email
-                    </button>
-                  </div>
                 </form>
               </div>
             )}
