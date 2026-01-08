@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, Employee, Shift, View } from './types';
 import { storageService } from './services/storageService';
-import { APP_VERSION } from './constants';
 import Dashboard from './components/Dashboard';
 import EmployeeList from './components/EmployeeList';
 import ShiftLog from './components/ShiftLog';
@@ -11,87 +10,83 @@ import MonthlyReport from './components/MonthlyReport';
 import Login from './components/Login';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<string | null>(() => {
-    return localStorage.getItem('wagetrack_current_user');
-  });
-  
-  const [state, setState] = useState<AppState>(() => {
-    const user = currentUser || localStorage.getItem('wagetrack_current_user');
-    return user ? storageService.loadLocal(user) : { employees: [], shifts: [], updatedAt: 0 };
-  });
-
+  const [token, setToken] = useState<string | null>(storageService.getAuthToken());
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [state, setState] = useState<AppState>({ employees: [], shifts: [], updatedAt: 0, version: 0 });
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [syncStatus, setSyncStatus] = useState<'connected' | 'syncing' | 'conflict' | 'error'>('connected');
+  const [syncStatus, setSyncStatus] = useState<'live' | 'syncing' | 'conflict' | 'error'>('live');
 
   const syncTimeoutRef = useRef<number | null>(null);
 
-  // Periodic Cloud Refresh (Poll for changes from other devices)
+  // 1. SESSION INITIALIZATION
   useEffect(() => {
-    if (!currentUser) return;
+    const initSession = async () => {
+      if (token) {
+        setSyncStatus('syncing');
+        const data = await storageService.fetchData(token);
+        if (data) {
+          setState(data);
+          setCurrentUser(atob(token).split(':')[0]);
+          setSyncStatus('live');
+        } else {
+          // Token invalid or expired
+          handleLogout();
+        }
+      }
+    };
+    initSession();
+  }, [token]);
+
+  // 2. BACKGROUND POLLING (Fetch changes from other devices)
+  useEffect(() => {
+    if (!token) return;
 
     const pollInterval = setInterval(async () => {
-      const cloudData = await storageService.fetchFromCloud(currentUser);
-      if (cloudData && cloudData.updatedAt > state.updatedAt) {
-        console.log("Remote change detected, updating local state...");
-        setState(cloudData);
-        storageService.saveLocal(currentUser, cloudData);
+      const remoteData = await storageService.fetchData(token);
+      if (remoteData && remoteData.version > state.version) {
+        console.log("Auto-sync: Remote version is newer. Updating local state.");
+        setState(remoteData);
       }
-    }, 15000); // Check every 15 seconds
+    }, 10000); // Poll every 10s
 
     return () => clearInterval(pollInterval);
-  }, [currentUser, state.updatedAt]);
+  }, [token, state.version]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Background Cloud Push
-  useEffect(() => {
-    if (currentUser) {
-      // Always persist locally immediately
-      storageService.saveLocal(currentUser, state);
-      
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-      
-      syncTimeoutRef.current = window.setTimeout(async () => {
-        setSyncStatus('syncing');
-        const response = await storageService.pushToCloud(currentUser, state);
-        
-        if (response.success) {
-          setSyncStatus('connected');
-          // Update local state with the server-verified timestamp if provided
-          if (response.remoteState) {
-             setState(prev => ({ ...prev, updatedAt: response.remoteState!.updatedAt }));
-          }
-        } else if (response.remoteState) {
-          // CONFLICT HANDLING
-          setSyncStatus('conflict');
-          setState(response.remoteState); // Force sync with newest cloud version
-          storageService.saveLocal(currentUser, response.remoteState);
-          setTimeout(() => setSyncStatus('connected'), 2000);
-        } else {
-          setSyncStatus('error');
-        }
-      }, 1500);
-    }
-  }, [state.employees, state.shifts, currentUser]);
+  // 3. SECURE PUSH LOGIC (OCC)
+  const syncWithCloud = async (clientState: AppState) => {
+    if (!token) return;
 
-  const handleLoginSuccess = async (email: string) => {
-    setCurrentUser(email);
-    localStorage.setItem('wagetrack_current_user', email);
     setSyncStatus('syncing');
-    const cloudState = await storageService.fetchFromCloud(email);
-    if (cloudState) {
-      setState(cloudState);
-      storageService.saveLocal(email, cloudState);
+    const response = await storageService.pushData(token, clientState);
+    
+    if (response.success && response.latestState) {
+      setState(response.latestState);
+      setSyncStatus('live');
+    } else if (response.latestState) {
+      // CONFLICT RESOLUTION: Server rejected update because it's newer
+      setSyncStatus('conflict');
+      setState(response.latestState);
+      setTimeout(() => setSyncStatus('live'), 2000);
+    } else {
+      setSyncStatus('error');
     }
-    setSyncStatus('connected');
+  };
+
+  const handleLoginSuccess = (userToken: string) => {
+    setToken(userToken);
+    localStorage.setItem('wagetrack_current_user', atob(userToken).split(':')[0]);
   };
 
   const handleLogout = () => {
+    storageService.logout();
+    setToken(null);
     setCurrentUser(null);
     localStorage.removeItem('wagetrack_current_user');
     setCurrentView('dashboard');
@@ -99,10 +94,13 @@ const App: React.FC = () => {
   };
 
   const updateState = (updater: (prev: AppState) => AppState) => {
-    setState(prev => {
-      const updated = updater(prev);
-      return { ...updated, updatedAt: Date.now() }; // Manual local timestamp increment
-    });
+    const nextState = updater(state);
+    // Note: We don't increment version here; the server increments it upon a successful push.
+    // We update local state immediately for UI responsiveness, then sync.
+    setState(nextState);
+    
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = window.setTimeout(() => syncWithCloud(nextState), 1000);
   };
 
   const addEmployee = (empData: Omit<Employee, 'id'>) => {
@@ -133,7 +131,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (!currentUser) {
+  if (!token) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
@@ -161,7 +159,7 @@ const App: React.FC = () => {
               'fa-cloud-check'
             } text-[10px]`}></i>
             <span className="text-[10px] font-black uppercase tracking-widest">
-              {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'conflict' ? 'Conflict Resolved' : syncStatus === 'error' ? 'Sync Error' : 'Live'}
+              {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'conflict' ? 'Auto-Merged' : syncStatus === 'error' ? 'Sync Error' : 'Global Hub'}
             </span>
           </div>
           <div className="hidden sm:flex flex-col text-right pr-4 border-r border-slate-100">
@@ -169,7 +167,7 @@ const App: React.FC = () => {
              <p className="text-sm font-black text-slate-800 tabular-nums">{currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}</p>
           </div>
           <button onClick={() => setIsMenuOpen(true)} className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-200 border border-white transition-all active:scale-90">
-            {currentUser?.charAt(0).toUpperCase()}
+            {currentUser?.charAt(0).toUpperCase() || '?'}
           </button>
         </div>
       </header>
@@ -177,7 +175,7 @@ const App: React.FC = () => {
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full transition-all duration-300">
         <header className="mb-6 px-1">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">{currentView.replace('-', ' ')}</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Unified Management Console</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Multi-Device Verified Profile</p>
         </header>
         
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -189,7 +187,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {[
@@ -216,10 +213,10 @@ const App: React.FC = () => {
             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-10"></div>
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-8 p-4 bg-indigo-50 rounded-3xl border border-indigo-100">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black">{currentUser?.charAt(0).toUpperCase()}</div>
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black">{currentUser?.charAt(0).toUpperCase() || '?'}</div>
                 <div>
-                  <p className="font-black text-slate-900 truncate max-w-[200px]">{currentUser}</p>
-                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Global Account Verified</p>
+                  <p className="font-black text-slate-900 truncate max-w-[200px]">{currentUser || 'Account'}</p>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Global Session Active</p>
                 </div>
               </div>
               <button onClick={() => { setCurrentView('employees'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"><i className="fa-solid fa-users text-xl text-indigo-500"></i><span>Team Management</span></button>

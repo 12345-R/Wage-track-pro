@@ -27,7 +27,15 @@ export interface User {
 export interface AppState {
   employees: Employee[];
   shifts: Shift[];
-  updatedAt: number; // For sync conflict resolution
+  updatedAt: number;
+  version: number; // Incrementing version counter for OCC
 }
 
 export type View = 'dashboard' | 'employees' | 'shifts' | 'ai-insights' | 'reports';
+
+export interface AuthResponse {
+  success: boolean;
+  token?: string;
+  email?: string;
+  error?: string;
+}

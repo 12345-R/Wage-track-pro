@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { storageService } from '../services/storageService';
 
 interface LoginProps {
-  onLoginSuccess: (email: string) => void;
+  onLoginSuccess: (token: string) => void;
 }
 
 type Mode = 'login' | 'register' | 'register-success' | 'authenticating';
@@ -21,32 +21,37 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     setMode('authenticating');
     
-    try {
-      const response = await storageService.authenticate(email, password);
-      
-      if (response.success) {
-        // Data is already handled inside the authenticate method
-        onLoginSuccess(email);
-      } else {
-        setError(response.error || 'Check your credentials.');
-        setMode('login');
-      }
-    } catch (err) {
-      setError('Connection to security hub failed. Try again.');
+    const response = await storageService.login(email, password);
+    
+    if (response.success && response.token) {
+      onLoginSuccess(response.token);
+    } else {
+      setError(response.error || 'Check your credentials.');
       setMode('login');
     }
   };
 
-  const startRegistration = (e: React.FormEvent) => {
+  const startRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
     
-    // Save to global registry so other devices can "see" this account
-    storageService.saveUserToGlobal({ username: email.split('@')[0], email, password });
-    setMode('register-success');
+    setMode('authenticating');
+    const response = await storageService.register({ 
+      username: email.split('@')[0], 
+      email, 
+      password 
+    });
+
+    if (response.success) {
+      setMode('register-success');
+    } else {
+      setError(response.error || 'Registration failed.');
+      setMode('register');
+    }
   };
 
   if (mode === 'authenticating') {
@@ -55,8 +60,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="absolute inset-0 bg-white/40 backdrop-blur-xl"></div>
         <div className="relative z-10 flex flex-col items-center text-center">
           <div className="w-20 h-20 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin mb-8"></div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Authorizing Universal Access</h2>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-3 animate-pulse">Retrieving encrypted business profile...</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Verifying Business Identity</h2>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-3 animate-pulse">Syncing with global enterprise hub...</p>
         </div>
       </div>
     );
@@ -79,37 +84,37 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <i className="fa-solid fa-calculator text-2xl text-indigo-600"></i>
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">WageTrack Pro</h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Global Enterprise Hub</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Enterprise Access Hub</p>
         </div>
 
         <div className="bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[3.5rem] shadow-2xl shadow-indigo-200/50 border border-white">
           <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-10">
             <button 
               onClick={() => { setMode('login'); setError(''); }} 
-              className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+              className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-50'}`}
             >
-              Log In
+              Sign In
             </button>
             <button 
               onClick={() => { setMode('register'); setError(''); }} 
-              className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+              className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-50'}`}
             >
-              Sign Up
+              Setup New Hub
             </button>
           </div>
 
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in duration-500">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Work Email</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Admin Email</label>
                 <input 
                   type="email" required value={email} onChange={e => setEmail(e.target.value)} 
                   className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium text-lg" 
-                  placeholder="admin@business.com" 
+                  placeholder="manager@business.com" 
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Key Phrase</label>
                 <div className="relative">
                   <input 
                     type={showPassword ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)} 
@@ -125,22 +130,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 type="submit" 
                 className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] hover:bg-indigo-700 shadow-xl shadow-indigo-100 text-xl transition-all active:scale-[0.98]"
               >
-                Sign In
+                Enter Dashboard
               </button>
+              <div className="text-center pt-2">
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Supports multiple concurrent sessions</p>
+              </div>
             </form>
           )}
 
           {mode === 'register' && (
             <form onSubmit={startRegistration} className="space-y-5 animate-in fade-in duration-500">
                <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Business Email</label>
-                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600 text-lg" placeholder="manager@office.com" />
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Business Admin Email</label>
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600 text-lg" placeholder="admin@office.com" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600" placeholder="Password" />
-                <input type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600" placeholder="Confirm" />
+                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600" placeholder="Set Password" />
+                <input type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-6 py-4 rounded-2xl outline-none focus:border-indigo-600" placeholder="Repeat Password" />
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] hover:bg-slate-800 shadow-xl text-xl mt-4">Create Global Account</button>
+              <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] hover:bg-slate-800 shadow-xl text-xl mt-4">Initialize Global Hub</button>
             </form>
           )}
 
@@ -150,8 +158,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <i className="fa-solid fa-circle-check text-4xl"></i>
                </div>
                <h3 className="text-2xl font-black text-slate-900 mb-2">Global Registry Complete</h3>
-               <p className="text-slate-500 font-medium mb-8">Your enterprise credentials are now active. You can log in from any device.</p>
-               <button onClick={() => setMode('login')} className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] text-xl">Proceed to Dashboard</button>
+               <p className="text-slate-500 font-medium mb-8">Your enterprise credentials are now active. You can log in from any device securely.</p>
+               <button onClick={() => setMode('login')} className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] text-xl">Sign In to Continue</button>
             </div>
           )}
 

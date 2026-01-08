@@ -1,87 +1,112 @@
 
-import { AppState, User } from '../types';
-import { STORAGE_KEY, INITIAL_EMPLOYEES, APP_VERSION } from '../constants';
+import { AppState, User, AuthResponse } from '../types';
+import { STORAGE_KEY, INITIAL_EMPLOYEES } from '../constants';
 
-const USERS_KEY = 'wagetrack_pro_global_users';
-const VERSION_KEY = 'wagetrack_app_version';
+const GLOBAL_DB_KEY = 'wagetrack_remote_database'; // Simulation of a central DB
+const SESSION_TOKEN_KEY = 'wagetrack_auth_token';
 
 /**
- * SOURCE OF TRUTH SERVICE
- * Simulates a robust backend API with concurrency control.
+ * MOCK BACKEND API
+ * In a real-world scenario, these methods would be fetch() calls to a Node/Python/Go backend.
  */
 export const storageService = {
-  // Scoped Local Cache (for offline/performance)
-  loadLocal: (email: string): AppState => {
-    const userStorageKey = `${STORAGE_KEY}_${email}`;
-    const saved = localStorage.getItem(userStorageKey);
-    return saved ? JSON.parse(saved) : { employees: INITIAL_EMPLOYEES, shifts: [], updatedAt: 0 };
+  
+  // --- PRIVATE SIMULATED DATABASE HELPERS ---
+  _getRemoteDB: () => {
+    const db = localStorage.getItem(GLOBAL_DB_KEY);
+    return db ? JSON.parse(db) : { users: [], data: {} };
   },
 
-  saveLocal: (email: string, state: AppState) => {
-    const userStorageKey = `${STORAGE_KEY}_${email}`;
-    localStorage.setItem(userStorageKey, JSON.stringify(state));
+  _saveRemoteDB: (db: any) => {
+    localStorage.setItem(GLOBAL_DB_KEY, JSON.stringify(db));
   },
 
-  // CLOUD SYNC ENGINE
-  // Simulated Server-Side Logic
-  pushToCloud: async (email: string, newState: AppState): Promise<{ success: boolean; remoteState?: AppState; error?: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 600)); // Network latency
+  // --- AUTHENTICATION API ---
+  
+  login: async (email: string, pass: string): Promise<AuthResponse> => {
+    await new Promise(r => setTimeout(r, 800)); // Network delay
+    const db = storageService._getRemoteDB();
+    const user = db.users.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+
+    if (user && user.password === pass) {
+      // Generate a stateless "Token" (In reality, a JWT from the server)
+      const token = btoa(`${email}:${Date.now()}`);
+      localStorage.setItem(SESSION_TOKEN_KEY, token);
+      return { success: true, token, email };
+    }
+    return { success: false, error: 'Invalid credentials. Account not found or password incorrect.' };
+  },
+
+  register: async (user: User): Promise<AuthResponse> => {
+    await new Promise(r => setTimeout(r, 1000));
+    const db = storageService._getRemoteDB();
     
-    const cloudKey = `cloud_db_${email}`;
-    const rawCloudData = localStorage.getItem(cloudKey);
-    const cloudState: AppState | null = rawCloudData ? JSON.parse(rawCloudData) : null;
+    if (db.users.some((u: User) => u.email.toLowerCase() === user.email.toLowerCase())) {
+      return { success: false, error: 'This business email is already registered.' };
+    }
 
-    // CONCURRENCY CONTROL: If cloud is newer, reject client update to prevent overwrite
-    if (cloudState && cloudState.updatedAt > newState.updatedAt) {
-      console.warn("Cloud data is newer. Rejecting push to prevent data loss.");
+    db.users.push(user);
+    // Initialize empty data for new user
+    db.data[user.email] = { 
+      employees: INITIAL_EMPLOYEES, 
+      shifts: [], 
+      updatedAt: Date.now(), 
+      version: 1 
+    };
+    
+    storageService._saveRemoteDB(db);
+    return { success: true };
+  },
+
+  // --- DATA ACCESS API (USER-SCOPED) ---
+
+  fetchData: async (token: string): Promise<AppState | null> => {
+    try {
+      const email = atob(token).split(':')[0];
+      const db = storageService._getRemoteDB();
+      return db.data[email] || null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * PUSH DATA (With Optimistic Concurrency Control)
+   * This is the fix for multi-device data corruption.
+   */
+  pushData: async (token: string, clientState: AppState): Promise<{ success: boolean; latestState?: AppState; error?: string }> => {
+    await new Promise(r => setTimeout(r, 500));
+    
+    const email = atob(token).split(':')[0];
+    const db = storageService._getRemoteDB();
+    const serverState: AppState = db.data[email];
+
+    // OCC Check: Reject if client's version is behind the server's version
+    if (serverState && serverState.version > clientState.version) {
+      console.warn("OCC Conflict: Server has version " + serverState.version + ", client has " + clientState.version);
       return { 
         success: false, 
-        remoteState: cloudState, 
-        error: "Conflict: Cloud has more recent data." 
+        latestState: serverState, 
+        error: "Conflict detected: Data was updated on another device. Syncing now..." 
       };
     }
 
-    // Success: Update Cloud with a new timestamp
-    const finalizedState = { ...newState, updatedAt: Date.now() };
-    localStorage.setItem(cloudKey, JSON.stringify(finalizedState));
-    return { success: true, remoteState: finalizedState };
+    // Accept update and increment version
+    const newState = { 
+      ...clientState, 
+      version: (serverState?.version || 0) + 1, 
+      updatedAt: Date.now() 
+    };
+    
+    db.data[email] = newState;
+    storageService._saveRemoteDB(db);
+    
+    return { success: true, latestState: newState };
   },
 
-  fetchFromCloud: async (email: string): Promise<AppState | null> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    const cloudKey = `cloud_db_${email}`;
-    const saved = localStorage.getItem(cloudKey);
-    return saved ? JSON.parse(saved) : null;
+  logout: () => {
+    localStorage.removeItem(SESSION_TOKEN_KEY);
   },
 
-  // GLOBAL REGISTRY (The 'Users' Table)
-  getGlobalUsers: (): User[] => {
-    const saved = localStorage.getItem(USERS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  },
-
-  saveUserToGlobal: (user: User) => {
-    const users = storageService.getGlobalUsers();
-    const existingIndex = users.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
-    if (existingIndex > -1) {
-      users[existingIndex] = user;
-    } else {
-      users.push(user);
-    }
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  },
-
-  // ROBUST AUTHENTICATION
-  authenticate: async (email: string, pass: string): Promise<{ success: boolean; data?: AppState; error?: string }> => {
-    const users = storageService.getGlobalUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (user && user.password === pass) {
-      // Force retrieval of latest cloud data on login to ensure consistency
-      const cloudData = await storageService.fetchFromCloud(email);
-      return { success: true, data: cloudData || storageService.loadLocal(email) };
-    }
-
-    return { success: false, error: 'Invalid credentials. Please verify your email and password.' };
-  }
+  getAuthToken: () => localStorage.getItem(SESSION_TOKEN_KEY)
 };
