@@ -29,4 +29,4 @@ export interface AppState {
   shifts: Shift[];
 }
 
-export type View = 'dashboard' | 'employees' | 'shifts' | 'ai-insights' | 'monthly-reports';
+export type View = 'dashboard' | 'employees' | 'shifts' | 'ai-insights' | 'reports';

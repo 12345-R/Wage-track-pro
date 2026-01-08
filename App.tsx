@@ -24,28 +24,21 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Automatic App Refresh & Update Trigger
-  // If the developer updates the APP_VERSION in constants.ts, this will force a one-time
-  // refresh to ensure the browser clears stale assets and loads the new logic.
   useEffect(() => {
     const lastSeenVersion = localStorage.getItem('wagetrack_app_version');
     if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
       localStorage.setItem('wagetrack_app_version', APP_VERSION);
-      // Hard refresh to update code and styles
       window.location.reload();
     } else {
       localStorage.setItem('wagetrack_app_version', APP_VERSION);
     }
   }, []);
 
-  // Real-time clock effect
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Synchronize state with current user and storage
-  // This ensures all changes (shifts, employee edits, etc.) are saved instantly
   useEffect(() => {
     if (currentUser) {
       storageService.save(currentUser, state);
@@ -122,11 +115,20 @@ const App: React.FC = () => {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const mainNavItems = [
+  // Primary navigation for bottom bar
+  const bottomNavItems = [
+    { id: 'dashboard', label: 'Home', icon: 'fa-house' },
+    { id: 'shifts', label: 'Time Clock', icon: 'fa-clock-rotate-left' },
+    { id: 'reports', label: 'Report', icon: 'fa-file-invoice-dollar' },
+  ];
+
+  // Full navigation for desktop sidebar
+  const sidebarNavItems = [
     { id: 'dashboard', label: 'Home', icon: 'fa-house' },
     { id: 'employees', label: 'Employees', icon: 'fa-users' },
     { id: 'shifts', label: 'Time Clock', icon: 'fa-clock-rotate-left' },
-    { id: 'monthly-reports', label: 'Monthly Sheet', icon: 'fa-file-invoice-dollar' },
+    { id: 'reports', label: 'Report', icon: 'fa-file-invoice-dollar' },
+    { id: 'ai-insights', label: 'AI Analytics', icon: 'fa-brain' },
   ];
 
   const renderView = () => {
@@ -142,14 +144,13 @@ const App: React.FC = () => {
       );
       case 'shifts': return <ShiftLog employees={state.employees} shifts={state.shifts} onAddShift={addShift} onUpdateShift={updateShift} onDeleteShift={deleteShift} />;
       case 'ai-insights': return <AIReport employees={state.employees} shifts={state.shifts} />;
-      case 'monthly-reports': return <MonthlyReport employees={state.employees} shifts={state.shifts} />;
+      case 'reports': return <MonthlyReport employees={state.employees} shifts={state.shifts} />;
       default: return <Dashboard employees={state.employees} shifts={state.shifts} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-28 md:pb-0">
-      {/* Top Header */}
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 md:px-8 sticky top-0 z-[60] justify-between">
         <div className="flex items-center space-x-2 text-indigo-600">
           <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100">
@@ -173,7 +174,6 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full transition-all duration-300">
         <header className="mb-6 px-1">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">
@@ -189,10 +189,10 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation - Redesigned with Larger Fonts (+2 size) */}
+      {/* Mobile Bottom Navigation - Decluttered with Employees moved to Menu */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
-          {mainNavItems.map((item) => (
+          {bottomNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => {
@@ -232,7 +232,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Slide-up Menu Modal */}
+      {/* Slide-up Menu Modal - Now contains Employees */}
       {isMenuOpen && (
         <>
           <div 
@@ -254,17 +254,33 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
+                {/* Employees moved here for mobile */}
+                <button 
+                  onClick={() => { setCurrentView('employees'); setIsMenuOpen(false); }}
+                  className={`flex items-center space-x-4 p-5 rounded-2xl font-black transition-all ${
+                    currentView === 'employees' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <i className="fa-solid fa-users text-xl"></i>
+                  <div className="flex flex-col items-start">
+                    <span className="text-base">Team Management</span>
+                    <span className={`text-[10px] uppercase tracking-widest font-bold ${currentView === 'employees' ? 'text-indigo-100' : 'text-slate-400'}`}>Edit Staff & Rates</span>
+                  </div>
+                </button>
+
                 <button 
                   onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }}
-                  className="flex items-center space-x-4 p-4 rounded-2xl bg-indigo-50 text-indigo-600 font-bold transition-all hover:bg-indigo-100"
+                  className={`flex items-center space-x-4 p-5 rounded-2xl font-black transition-all ${
+                    currentView === 'ai-insights' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                  }`}
                 >
                   <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
                   <span>AI Analytics & Insights</span>
                 </button>
                 
                 <button 
-                  onClick={() => { /* Account settings */ }}
-                  className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
+                  onClick={() => { setIsMenuOpen(false); }}
+                  className="flex items-center space-x-4 p-5 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
                 >
                   <i className="fa-solid fa-gear text-xl"></i>
                   <span>Account Settings</span>
@@ -272,7 +288,7 @@ const App: React.FC = () => {
 
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center space-x-4 p-4 rounded-2xl bg-rose-50 text-rose-600 font-bold transition-all hover:bg-rose-100"
+                  className="flex items-center space-x-4 p-5 rounded-2xl bg-rose-50 text-rose-600 font-bold transition-all hover:bg-rose-100"
                 >
                   <i className="fa-solid fa-right-from-bracket text-xl"></i>
                   <span>Sign Out Account</span>
@@ -290,7 +306,7 @@ const App: React.FC = () => {
       {/* Desktop Navigation */}
       <nav className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 z-50 flex-col">
         <div className="p-6 space-y-2 flex-1">
-          {mainNavItems.map((item) => (
+          {sidebarNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setCurrentView(item.id as View)}
@@ -304,17 +320,6 @@ const App: React.FC = () => {
               <span>{item.label}</span>
             </button>
           ))}
-          <button
-            onClick={() => setCurrentView('ai-insights')}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-bold ${
-              currentView === 'ai-insights' 
-                ? 'bg-indigo-50 text-indigo-600' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-            }`}
-          >
-            <i className="fa-solid fa-brain text-lg w-6"></i>
-            <span>AI Analytics</span>
-          </button>
         </div>
         <div className="p-6 border-t border-slate-100">
            <button 

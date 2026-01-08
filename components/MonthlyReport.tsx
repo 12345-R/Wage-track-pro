@@ -87,7 +87,7 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h3 className="text-lg font-bold text-slate-800 flex items-center">
           <i className="fa-solid fa-file-invoice-dollar mr-2 text-indigo-500"></i>
-          Consolidated Monthly Sheet
+          Business Performance Report
         </h3>
         <div className="flex items-center space-x-3">
           <select 
@@ -126,11 +126,11 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-indigo-500">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Monthly Total Hours</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Hours</p>
           <p className="text-2xl font-bold text-slate-800">{reportData.grandTotalHours.toFixed(1)} hrs</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Monthly Total Payout</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Payout</p>
           <p className="text-2xl font-bold text-slate-800">${reportData.grandTotalWages.toFixed(2)}</p>
         </div>
       </div>
@@ -150,7 +150,7 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
             <tbody className="divide-y divide-slate-50">
               {reportData.consolidated.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No shifts recorded for this period.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No data for selected period.</td>
                 </tr>
               ) : (
                 reportData.consolidated.map(item => (
@@ -173,7 +173,7 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
             {reportData.consolidated.length > 0 && (
               <tfoot className="bg-slate-50/80 font-bold text-slate-800">
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-right uppercase text-xs tracking-widest text-slate-400">Monthly Totals</td>
+                  <td colSpan={3} className="px-6 py-4 text-right uppercase text-xs tracking-widest text-slate-400">Totals</td>
                   <td className="px-6 py-4">{reportData.grandTotalHours.toFixed(1)} hrs</td>
                   <td className="px-6 py-4 text-right text-indigo-700 font-extrabold text-lg">
                     ${reportData.grandTotalWages.toFixed(2)}
@@ -186,7 +186,7 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
       </div>
       
       <p className="text-center text-slate-400 text-xs italic">
-        * Totals are calculated based on all logged shifts for {months[selectedMonth]} {selectedYear}.
+        * Report details generated for {months[selectedMonth]} {selectedYear}.
       </p>
     </div>
   );
