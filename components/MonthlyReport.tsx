@@ -98,24 +98,24 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* FILTER DECK - PREVIOUS SIZES */}
+      {/* FILTER DECK */}
       <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Section 1: Scope Selection */}
           <div className="lg:col-span-4 space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Reporting Mode</label>
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Reporting Mode</label>
+              <div className="flex bg-slate-100 p-2 rounded-2xl">
                 <button 
                   onClick={() => setScope('team')}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${scope === 'team' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-3.5 rounded-xl text-sm font-black transition-all ${scope === 'team' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   <i className="fa-solid fa-users mr-2"></i>Full Team
                 </button>
                 <button 
                   onClick={() => setScope('individual')}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${scope === 'individual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-3.5 rounded-xl text-sm font-black transition-all ${scope === 'individual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   <i className="fa-solid fa-user mr-2"></i>Individual
                 </button>
@@ -124,12 +124,12 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
 
             {scope === 'individual' && (
               <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Select Employee</label>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Select Employee</label>
                 <div className="relative">
                   <select 
                     value={selectedEmployeeId} 
                     onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm appearance-none shadow-sm"
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-base appearance-none shadow-sm"
                   >
                     <option value="">Choose employee...</option>
                     {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -142,24 +142,24 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
 
           {/* Section 2: Date Range */}
           <div className="lg:col-span-5 space-y-6">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Calendar Window</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Calendar Window</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative">
-                <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input 
                   type="date" 
                   value={startDate} 
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 pl-11 pr-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-100 pl-11 pr-4 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-base shadow-sm"
                 />
               </div>
               <div className="relative">
-                <i className="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                <i className="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input 
                   type="date" 
                   value={endDate} 
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 pl-11 pr-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-100 pl-11 pr-4 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-base shadow-sm"
                 />
               </div>
             </div>
@@ -183,7 +183,7 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
         </div>
       </div>
 
-      {/* SUMMARY CARDS - PREVIOUS SIZES */}
+      {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center space-x-6">
           <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-2xl shadow-sm">
@@ -209,7 +209,7 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
         </div>
       </div>
 
-      {/* DETAILED VIEW - PREVIOUS SIZES */}
+      {/* DETAILED VIEW */}
       <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden">
         {scope === 'team' ? (
           <div className="overflow-x-auto">
