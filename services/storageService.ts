@@ -5,10 +5,8 @@ import { STORAGE_KEY, INITIAL_EMPLOYEES, APP_VERSION } from '../constants';
 const USERS_KEY = 'wagetrack_pro_users';
 const VERSION_KEY = 'wagetrack_app_version';
 
-// This service simulates a Cloud Database (e.g. Firebase/Supabase)
-// In a real production environment, the 'fetch' calls would go to a central API.
 export const storageService = {
-  // Scoped Data Methods (Local Cache)
+  // Scoped Data Methods
   load: (email: string): AppState => {
     const userStorageKey = `${STORAGE_KEY}_${email}`;
     const saved = localStorage.getItem(userStorageKey);
@@ -19,8 +17,6 @@ export const storageService = {
     }
 
     if (!saved) {
-      // If not in local cache, we normally fetch from cloud. 
-      // For this demo, we return initial state.
       return {
         employees: INITIAL_EMPLOYEES,
         shifts: []
@@ -36,7 +32,6 @@ export const storageService = {
   save: (email: string, state: AppState) => {
     const userStorageKey = `${STORAGE_KEY}_${email}`;
     localStorage.setItem(userStorageKey, JSON.stringify(state));
-    // Here we would also call: await api.pushToCloud(email, state);
   },
 
   // Global Auth Methods
@@ -58,33 +53,61 @@ export const storageService = {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   },
 
-  /**
-   * FIX: This method simulates a Cloud Registry check.
-   * It allows the user to log in on new devices where localStorage is empty.
-   */
-  authenticateAndFetch: async (email: string, pass: string): Promise<{ success: boolean; data?: AppState; error?: string }> => {
-    // Artificial delay to simulate network/cloud communication
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
+  // CROSS-DEVICE SYNC LOGIC
+  // This packages everything into a portable bundle
+  getIdentityBundle: (email: string): string => {
     const users = storageService.getUsers();
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) return '';
 
-    // On a real server, we check the password hash.
-    if (user && user.password === pass) {
-      const state = storageService.load(email);
-      return { success: true, data: state };
+    const state = storageService.load(email);
+    const bundle = {
+      u: user,
+      s: state,
+      v: APP_VERSION,
+      ts: Date.now()
+    };
+    // Encoded bundle for URL sharing
+    return btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
+  },
+
+  // This unpacks a bundle from another device
+  applyIdentityBundle: (key: string): { success: boolean, email?: string, error?: string } => {
+    try {
+      const decoded = decodeURIComponent(escape(atob(key)));
+      const bundle = JSON.parse(decoded);
+
+      if (!bundle.u || !bundle.s) return { success: false, error: 'Invalid Identity Format.' };
+
+      // Persist to the local storage of THIS device
+      storageService.saveUser(bundle.u);
+      storageService.save(bundle.u.email, bundle.s);
+
+      return { success: true, email: bundle.u.email };
+    } catch (e) {
+      return { success: false, error: 'Identity Link is invalid or expired.' };
     }
+  },
 
-    // SIMULATION: If this is a demo environment and we want "different devices" to work,
-    // we allow any registered email to "provision" a new device session.
-    // In a real app, this would be a secure API call.
-    if (email.includes('@') && pass.length >= 4) {
-      // We simulate finding the account in the cloud even if not in local registry
-      const mockUser: User = { username: email.split('@')[0], email, password: pass };
-      storageService.saveUser(mockUser);
-      return { success: true, data: storageService.load(email) };
+  // Generates the link to be opened on other devices
+  getUniversalLink: (email: string): string => {
+    const bundle = storageService.getIdentityBundle(email);
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?access=${bundle}`;
+  },
+
+  // Check if current URL is an access link
+  checkForAccessLink: (): { success: boolean, email?: string } => {
+    const params = new URLSearchParams(window.location.search);
+    const accessData = params.get('access');
+    if (accessData) {
+      const result = storageService.applyIdentityBundle(accessData);
+      if (result.success) {
+        // Clean URL after syncing
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return { success: true, email: result.email };
+      }
     }
-
-    return { success: false, error: 'Authentication failed. Please check credentials.' };
+    return { success: false };
   }
 };

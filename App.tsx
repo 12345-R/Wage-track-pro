@@ -12,6 +12,12 @@ import Login from './components/Login';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
+    // Check for sync/access data in URL first
+    const syncResult = storageService.checkForAccessLink();
+    if (syncResult.success && syncResult.email) {
+      localStorage.setItem('wagetrack_current_user', syncResult.email);
+      return syncResult.email;
+    }
     return localStorage.getItem('wagetrack_current_user');
   });
   
@@ -23,6 +29,10 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Access Link State
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [accessUrl, setAccessUrl] = useState('');
 
   useEffect(() => {
     const lastSeenVersion = localStorage.getItem('wagetrack_app_version');
@@ -56,6 +66,14 @@ const App: React.FC = () => {
     localStorage.removeItem('wagetrack_current_user');
     setCurrentView('dashboard');
     setIsMenuOpen(false);
+  };
+
+  const generateAccessLink = () => {
+    if (currentUser) {
+      const url = storageService.getUniversalLink(currentUser);
+      setAccessUrl(url);
+      setShowAccessModal(true);
+    }
   };
 
   const addEmployee = (empData: Omit<Employee, 'id'>) => {
@@ -115,15 +133,18 @@ const App: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-indigo-50 rounded-full border border-indigo-100">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Enterprise Cloud Connected</span>
-          </div>
+          <button 
+            onClick={generateAccessLink} 
+            className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all"
+          >
+            <i className="fa-solid fa-link"></i>
+            <span>Generate Access Link</span>
+          </button>
           <div className="hidden sm:flex flex-col text-right pr-4 border-r border-slate-100">
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">{currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
              <p className="text-sm font-black text-slate-800 tabular-nums">{currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}</p>
           </div>
-          <button onClick={() => setIsMenuOpen(true)} className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-200 border border-white">
+          <button onClick={() => setIsMenuOpen(true)} className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-200 border border-white transition-all active:scale-90">
             {currentUser?.charAt(0).toUpperCase()}
           </button>
         </div>
@@ -132,7 +153,7 @@ const App: React.FC = () => {
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full transition-all duration-300">
         <header className="mb-6 px-1">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">{currentView.replace('-', ' ')}</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Unified Management Console</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Enterprise Management Hub</p>
         </header>
         
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -144,7 +165,36 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Access Link Modal */}
+      {showAccessModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300 border border-white">
+            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mb-6 mx-auto shadow-sm">
+              <i className="fa-solid fa-cloud-arrow-up text-3xl"></i>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 text-center mb-2">Universal Access Link</h3>
+            <p className="text-slate-500 text-center text-sm font-medium mb-8">Open this link on any new phone or computer to instantly sync all your team data and employee records.</p>
+            
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 relative">
+              <textarea 
+                readOnly 
+                value={accessUrl} 
+                className="w-full bg-transparent border-none text-[10px] font-mono text-slate-400 break-all resize-none h-24 outline-none"
+              />
+              <button 
+                onClick={() => { navigator.clipboard.writeText(accessUrl); alert('Link Copied!'); }}
+                className="w-full mt-4 bg-indigo-600 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
+              >
+                Copy Universal Link
+              </button>
+            </div>
+            
+            <button onClick={() => setShowAccessModal(false)} className="w-full text-slate-400 font-bold text-xs uppercase tracking-[0.2em] py-2">Close Security Hub</button>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation and Menus */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {bottomNavItems.map(item => (
@@ -160,7 +210,6 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile Slide-up Menu */}
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110]" onClick={() => setIsMenuOpen(false)}></div>
@@ -173,10 +222,11 @@ const App: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-black text-slate-900 truncate max-w-[200px]">{currentUser}</p>
-                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Global Admin Access</p>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Enterprise Global Admin</p>
                 </div>
               </div>
               <button onClick={() => { setCurrentView('employees'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"><i className="fa-solid fa-users text-xl text-indigo-500"></i><span>Team Management</span></button>
+              <button onClick={() => { generateAccessLink(); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-emerald-50 text-emerald-600 font-black hover:bg-emerald-100 transition-all"><i className="fa-solid fa-link text-xl"></i><span>Generate Access Link</span></button>
               <button onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"><i className="fa-solid fa-wand-magic-sparkles text-xl text-indigo-500"></i><span>AI Analytics</span></button>
               <button onClick={handleLogout} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all"><i className="fa-solid fa-right-from-bracket text-xl"></i><span>Sign Out</span></button>
             </div>
@@ -192,12 +242,13 @@ const App: React.FC = () => {
               <i className={`fa-solid ${item.icon} text-lg w-6`}></i><span>{item.label}</span>
             </button>
           ))}
+          <div className="pt-4 mt-4 border-t border-slate-100">
+             <button onClick={generateAccessLink} className="w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl text-emerald-600 hover:bg-emerald-50 font-black transition-all">
+                <i className="fa-solid fa-link text-lg w-6"></i><span>Access Link</span>
+             </button>
+          </div>
         </div>
         <div className="p-6 border-t border-slate-100">
-           <div className="mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Session ID</p>
-              <p className="text-[11px] font-mono text-slate-500 truncate">{btoa(currentUser || '').slice(0, 16)}...</p>
-           </div>
            <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl text-rose-500 hover:bg-rose-50 font-black transition-all">
               <i className="fa-solid fa-right-from-bracket text-lg w-6"></i><span>Logout</span>
            </button>
