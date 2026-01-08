@@ -21,6 +21,13 @@ const App: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Real-time clock effect
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Synchronize state with current user and storage
   useEffect(() => {
@@ -29,10 +36,10 @@ const App: React.FC = () => {
     }
   }, [state, currentUser]);
 
-  const handleLoginSuccess = (username: string) => {
-    setCurrentUser(username);
-    localStorage.setItem('wagetrack_current_user', username);
-    setState(storageService.load(username));
+  const handleLoginSuccess = (email: string) => {
+    setCurrentUser(email);
+    localStorage.setItem('wagetrack_current_user', email);
+    setState(storageService.load(email));
   };
 
   const handleLogout = () => {
@@ -42,11 +49,10 @@ const App: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  const addEmployee = (empData: Omit<Employee, 'id' | 'avatar'> & { emoji?: string }) => {
+  const addEmployee = (empData: Omit<Employee, 'id'>) => {
     const newEmp: Employee = {
       ...empData,
       id: Math.random().toString(36).substr(2, 9),
-      avatar: `https://picsum.photos/seed/${empData.name.replace(/\s/g, '')}/150`
     };
     setState(prev => ({
       ...prev,
@@ -55,13 +61,11 @@ const App: React.FC = () => {
   };
 
   const deleteEmployee = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this employee? This will also remove their shift history.")) {
-      setState(prev => ({
-        ...prev,
-        employees: prev.employees.filter(e => e.id !== id),
-        shifts: prev.shifts.filter(s => s.employeeId !== id)
-      }));
-    }
+    setState(prev => ({
+      ...prev,
+      employees: prev.employees.filter(e => e.id !== id),
+      shifts: prev.shifts.filter(s => s.employeeId !== id)
+    }));
   };
 
   const addShift = (shiftData: Omit<Shift, 'id'>) => {
@@ -132,14 +136,33 @@ const App: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
-          <div className="hidden sm:block text-right border-r border-slate-200 pr-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Account</p>
-            <div className="flex items-center text-indigo-500 text-xs font-bold">
-              <i className="fa-solid fa-circle-user mr-1.5"></i>
-              {currentUser}
+        <div className="flex items-center space-x-6">
+          {/* Live Clock Component */}
+          <div className="hidden lg:flex items-center space-x-4 px-4 py-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="flex flex-col text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">
+                {currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+              </p>
+              <p className="text-sm font-black text-slate-800 tabular-nums tracking-tight leading-none">
+                {currentTime.getHours().toString().padStart(2, '0')}
+                <span className="animate-pulse text-indigo-400 mx-0.5">:</span>
+                {currentTime.getMinutes().toString().padStart(2, '0')}
+                <span className="text-[10px] ml-1 text-slate-400">
+                  {currentTime.getSeconds().toString().padStart(2, '0')}
+                </span>
+              </p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+          </div>
+
+          <div className="hidden sm:block text-right border-r border-slate-200 pr-6">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Login Identity</p>
+            <div className="flex items-center text-indigo-500 text-xs font-bold max-w-[180px] truncate">
+              <i className="fa-solid fa-circle-user mr-1.5 flex-shrink-0"></i>
+              <span className="truncate">{currentUser}</span>
             </div>
           </div>
+          
           <button 
             onClick={handleLogout}
             className="text-slate-400 hover:text-rose-500 transition-colors text-sm font-semibold flex items-center space-x-2"
@@ -180,7 +203,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar Footer Actions */}
         <div className="p-6 border-t border-slate-50 space-y-4">
            <button 
              onClick={handleLogout}
@@ -191,11 +213,11 @@ const App: React.FC = () => {
            </button>
 
            <div className="flex items-center space-x-3 pt-2">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold flex-shrink-0">
                 {currentUser?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{currentUser}</p>
+                <p className="text-sm font-bold text-slate-800 truncate" title={currentUser || ''}>{currentUser}</p>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">Business Admin</p>
               </div>
            </div>
