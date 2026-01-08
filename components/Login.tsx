@@ -7,16 +7,14 @@ interface LoginProps {
   onLoginSuccess: (email: string) => void;
 }
 
-type Mode = 'login' | 'register' | 'sync' | 'register-success';
+type Mode = 'login' | 'register' | 'register-success' | 'authenticating';
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [syncKey, setSyncKey] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -27,27 +25,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
 
     if (user) {
-      onLoginSuccess(user.email);
+      setMode('authenticating');
+      // Simulate Cloud Data Retrieval for a seamless cross-device feel
+      setTimeout(() => {
+        onLoginSuccess(user.email);
+      }, 1500);
     } else {
-      // Logic for different devices: if the user doesn't exist locally, suggest sync
-      const userExistsLocally = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!userExistsLocally) {
-        setError('This device does not recognize your account. Please use "Sync New Device" to restore your data.');
-      } else {
-        setError('Invalid password.');
-      }
-    }
-  };
-
-  const handleSyncRestore = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const result = storageService.applyIdentityBundle(syncKey);
-    if (result.success && result.email) {
-      setSuccess('Identity Restored! Logging you in...');
-      setTimeout(() => onLoginSuccess(result.email!), 1500);
-    } else {
-      setError(result.error || 'Sync failed.');
+      setError('Invalid credentials. If this is a new device, ensure your account was created with this exact email.');
     }
   };
 
@@ -62,6 +46,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setMode('register-success');
   };
 
+  if (mode === 'authenticating') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
+        <div className="w-20 h-20 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin mb-8"></div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Syncing Records...</h2>
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Connecting to Secure Cloud Instance</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden bg-slate-50">
       <div className="absolute inset-0 z-0 opacity-40">
@@ -74,20 +68,21 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <i className="fa-solid fa-calculator text-2xl text-indigo-600"></i>
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">WageTrack Pro</h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Enterprise Payroll Hub</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Universal Business Access</p>
         </div>
 
         <div className="bg-white/80 backdrop-blur-2xl p-8 md:p-12 rounded-[3.5rem] shadow-2xl shadow-indigo-200/50 border border-white">
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-10">
-            <button onClick={() => { setMode('login'); setError(''); }} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Sign In</button>
-            <button onClick={() => { setMode('register'); setError(''); }} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>New Setup</button>
-            <button onClick={() => { setMode('sync'); setError(''); }} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'sync' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}><i className="fa-solid fa-cloud-arrow-down mr-1"></i>Sync</button>
-          </div>
+          {(mode === 'login' || mode === 'register') && (
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-10">
+              <button onClick={() => { setMode('login'); setError(''); }} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Sign In</button>
+              <button onClick={() => { setMode('register'); setError(''); }} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>New Setup</button>
+            </div>
+          )}
 
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in duration-500">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Work Email</label>
                 <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white border border-slate-200 px-5 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-medium" placeholder="admin@business.com" />
               </div>
               <div>
@@ -101,20 +96,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </form>
           )}
 
-          {mode === 'sync' && (
-            <form onSubmit={handleSyncRestore} className="space-y-6 animate-in fade-in duration-500">
-              <div className="text-center mb-6">
-                 <h3 className="text-xl font-black text-emerald-600">Sync New Device</h3>
-                 <p className="text-xs font-medium text-slate-500 mt-1">Restore your business profile instantly using your Sync Key.</p>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Universal Identity Key</label>
-                <textarea required value={syncKey} onChange={e => setSyncKey(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-mono text-[10px] text-slate-600 h-32 resize-none" placeholder="Paste your base64 sync code here..." />
-              </div>
-              <button type="submit" className="w-full bg-emerald-600 text-white font-black py-5 rounded-[2rem] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 text-lg">Restore from Identity Key</button>
-            </form>
-          )}
-
           {mode === 'register' && (
             <form onSubmit={startRegistration} className="space-y-6 animate-in fade-in duration-500">
                <div>
@@ -125,21 +106,20 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-5 py-4 rounded-2xl outline-none" placeholder="Password" />
                 <input type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full bg-white border border-slate-200 px-5 py-4 rounded-2xl outline-none" placeholder="Confirm" />
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] hover:bg-slate-800 transition-all shadow-xl text-lg">Setup Business</button>
+              <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] hover:bg-slate-800 transition-all shadow-xl text-lg">Setup Business Account</button>
             </form>
           )}
 
           {mode === 'register-success' && (
             <div className="text-center py-10 animate-in zoom-in-95 duration-500">
                <i className="fa-solid fa-circle-check text-6xl text-emerald-500 mb-6"></i>
-               <h3 className="text-2xl font-black text-slate-900 mb-2">Success!</h3>
-               <p className="text-slate-500 font-medium mb-8">Your account is ready. Please sign in.</p>
-               <button onClick={() => setMode('login')} className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem]">Sign In Now</button>
+               <h3 className="text-2xl font-black text-slate-900 mb-2">Account Created</h3>
+               <p className="text-slate-500 font-medium mb-8">Your enterprise credentials are active. Please sign in to access your dashboard.</p>
+               <button onClick={() => setMode('login')} className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem]">Back to Login</button>
             </div>
           )}
 
           {error && <div className="mt-8 p-4 bg-rose-50 text-rose-600 text-[10px] font-black uppercase rounded-2xl border border-rose-100 animate-in slide-in-from-top-2"><i className="fa-solid fa-triangle-exclamation mr-2"></i>{error}</div>}
-          {success && <div className="mt-8 p-4 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase rounded-2xl border border-emerald-100 animate-in slide-in-from-top-2"><i className="fa-solid fa-check-circle mr-2"></i>{success}</div>}
         </div>
       </div>
     </div>

@@ -51,59 +51,5 @@ export const storageService = {
     }
     
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  },
-
-  // Migration & Sync Logic for Cross-Device Support
-  getIdentityBundle: (email: string): string => {
-    const users = storageService.getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!user) return '';
-
-    const state = storageService.load(email);
-    const bundle = {
-      u: user,
-      s: state,
-      v: APP_VERSION,
-      ts: Date.now()
-    };
-    // Portable Base64 string
-    return btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
-  },
-
-  applyIdentityBundle: (key: string): { success: boolean, email?: string, error?: string } => {
-    try {
-      const decoded = decodeURIComponent(escape(atob(key)));
-      const bundle = JSON.parse(decoded);
-
-      if (!bundle.u || !bundle.s) return { success: false, error: 'Invalid Identity Format.' };
-
-      // Persist to this device
-      storageService.saveUser(bundle.u);
-      storageService.save(bundle.u.email, bundle.s);
-
-      return { success: true, email: bundle.u.email };
-    } catch (e) {
-      return { success: false, error: 'Failed to decrypt bundle. Please check the key.' };
-    }
-  },
-
-  getSyncUrl: (email: string): string => {
-    const bundle = storageService.getIdentityBundle(email);
-    const baseUrl = window.location.origin + window.location.pathname;
-    return `${baseUrl}?sync=${bundle}`;
-  },
-
-  checkForSyncUrl: (): { success: boolean, email?: string } => {
-    const params = new URLSearchParams(window.location.search);
-    const syncData = params.get('sync');
-    if (syncData) {
-      const result = storageService.applyIdentityBundle(syncData);
-      if (result.success) {
-        // Clean URL after sync
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return { success: true, email: result.email };
-      }
-    }
-    return { success: false };
   }
 };
