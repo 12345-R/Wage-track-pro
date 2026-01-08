@@ -62,5 +62,41 @@ export const storageService = {
       return true;
     }
     return false;
+  },
+
+  // Identity & Sync Fix: Generate a "Business Identity Key" for cross-device restoration
+  getIdentityKey: (email: string): string => {
+    const users = storageService.getUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) return '';
+
+    const state = storageService.load(email);
+    const bundle = {
+      user,
+      state,
+      ts: Date.now(),
+      v: APP_VERSION
+    };
+    // Base64 encoding for portability
+    return btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
+  },
+
+  restoreFromIdentityKey: (key: string): { success: boolean; email?: string; error?: string } => {
+    try {
+      const decoded = decodeURIComponent(escape(atob(key)));
+      const bundle = JSON.parse(decoded);
+
+      if (!bundle.user || !bundle.state) {
+        return { success: false, error: 'Invalid Identity Key.' };
+      }
+
+      // Restore user and state to local storage
+      storageService.saveUser(bundle.user);
+      storageService.save(bundle.user.email, bundle.state);
+
+      return { success: true, email: bundle.user.email };
+    } catch (e) {
+      return { success: false, error: 'Could not verify Identity Key. Check the code and try again.' };
+    }
   }
 };

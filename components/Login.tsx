@@ -7,7 +7,7 @@ interface LoginProps {
   onLoginSuccess: (email: string) => void;
 }
 
-type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm' | 'register-success';
+type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm' | 'register-success' | 'restore';
 
 interface PasswordInputProps {
   value: string;
@@ -48,6 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
+  const [identityKey, setIdentityKey] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
@@ -56,9 +57,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const validateEmail = (emailStr: string) => {
     return String(emailStr)
       .toLowerCase()
-      .match(
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-      );
+      .match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
   };
 
   const resetFields = () => {
@@ -66,6 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setSuccess('');
     setPassword('');
     setConfirmPassword('');
+    setIdentityKey('');
     setShowPassword(false);
   };
 
@@ -84,24 +84,38 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (user) {
       onLoginSuccess(user.email);
     } else {
-      setError('Invalid email or password on this device.');
+      // Logic fix for new device: If users list is empty or email not found locally, suggest restoration
+      if (users.length === 0 || !users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+        setError('Account not found on this device. If you registered on another device, use the Cloud Restore option below.');
+      } else {
+        setError('Invalid password.');
+      }
+    }
+  };
+
+  const handleRestore = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    const result = storageService.restoreFromIdentityKey(identityKey);
+    if (result.success && result.email) {
+      setSuccess('Business profile restored! Signing you in...');
+      setTimeout(() => onLoginSuccess(result.email!), 1500);
+    } else {
+      setError(result.error || 'Failed to restore account.');
     }
   };
 
   const startRegistration = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!email || !password) {
+    if (!email || !password || !confirmPassword) {
       setError('All fields are required.');
       return;
     }
-
     if (!validateEmail(email)) {
       setError('A valid business email is required.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -109,13 +123,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     
     const users = storageService.getUsers();
     if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      setError('This email is already registered.');
+      setError('This email is already registered locally.');
       return;
     }
 
     const newUser: User = { username: email, email, password };
     storageService.saveUser(newUser);
-    
     setMode('register-success');
     resetFields();
   };
@@ -125,7 +138,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     const users = storageService.getUsers();
     const user = users.find(u => u.email.toLowerCase() === resetEmail.toLowerCase());
-
     if (user) {
       setSuccess(`Identity verified. Please set your new password.`);
       setMode('reset-confirm');
@@ -141,15 +153,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       setError('Passwords do not match.');
       return;
     }
-
     const updated = storageService.updateUserPassword(resetEmail, password);
-    
     if (updated) {
-      setSuccess('Security credentials updated! Please sign in.');
+      setSuccess('Password updated! Please sign in.');
       setMode('login');
       resetFields();
     } else {
-      setError('Something went wrong. Please try again.');
+      setError('Something went wrong.');
     }
   };
 
@@ -160,11 +170,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       <div className="absolute inset-0 z-0">
         <img 
           src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=2000" 
-          alt="Bright Minimalist Office" 
+          alt="Office" 
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-50/50 via-transparent to-white/30"></div>
       </div>
 
       <div className="w-full max-w-lg relative z-10">
@@ -231,6 +240,36 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-[0.98] text-lg mt-4">
                   Sign In
                 </button>
+              </form>
+              <div className="mt-8 pt-6 border-t border-slate-200/50 text-center">
+                 <button onClick={() => setMode('restore')} className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors">
+                    <i className="fa-solid fa-cloud-arrow-down mr-2"></i>New Device? Restore Business
+                 </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'restore' && (
+            <div className="animate-in fade-in duration-500">
+              <div className="mb-8 text-center">
+                <h3 className="text-3xl font-black text-emerald-600 mb-2">Cloud Restore</h3>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed px-4">Paste your Business Identity Key to sync your data to this device.</p>
+              </div>
+              <form onSubmit={handleRestore} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">Identity Key</label>
+                  <textarea 
+                    value={identityKey} 
+                    onChange={(e) => setIdentityKey(e.target.value)}
+                    className="w-full bg-white/70 backdrop-blur-md border border-white/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 p-5 rounded-2xl focus:outline-none transition-all font-mono text-[10px] text-slate-600 shadow-sm min-h-[120px] resize-none"
+                    placeholder="Paste your base64 identity string..."
+                    required
+                  />
+                </div>
+                <button type="submit" className="w-full bg-emerald-600 text-white font-black py-5 rounded-[2rem] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98] text-lg">
+                  Verify & Sync Data
+                </button>
+                <button type="button" onClick={() => setMode('login')} className="w-full text-slate-400 text-xs font-black uppercase py-2 tracking-widest hover:text-slate-800">Back to Login</button>
               </form>
             </div>
           )}
@@ -355,10 +394,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           {error && <div className="bg-rose-50/80 backdrop-blur-md text-rose-600 text-[10px] font-black uppercase p-4 rounded-2xl mt-8 border border-rose-100 flex items-center shadow-sm"><i className="fa-solid fa-triangle-exclamation mr-2"></i>{error}</div>}
           {success && <div className="bg-emerald-50/80 backdrop-blur-md text-emerald-600 text-[10px] font-black uppercase p-4 rounded-2xl mt-8 border border-emerald-100 flex items-center shadow-sm"><i className="fa-solid fa-circle-check mr-2"></i>{success}</div>}
         </div>
-
-        <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-12 animate-in fade-in duration-1000 delay-500">
-          Secure Suite • v4.2.5 • WageTrack Pro
-        </p>
       </div>
     </div>
   );

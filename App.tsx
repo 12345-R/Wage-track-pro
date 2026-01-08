@@ -23,6 +23,10 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Identity Key Management
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [identityKey, setIdentityKey] = useState('');
 
   useEffect(() => {
     const lastSeenVersion = localStorage.getItem('wagetrack_app_version');
@@ -56,6 +60,14 @@ const App: React.FC = () => {
     localStorage.removeItem('wagetrack_current_user');
     setCurrentView('dashboard');
     setIsMenuOpen(false);
+  };
+
+  const handleShowIdentity = () => {
+    if (currentUser) {
+      const key = storageService.getIdentityKey(currentUser);
+      setIdentityKey(key);
+      setShowSyncModal(true);
+    }
   };
 
   const addEmployee = (empData: Omit<Employee, 'id'>) => {
@@ -166,9 +178,9 @@ const App: React.FC = () => {
               {currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}
             </p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold border border-slate-200">
+          <button onClick={() => setIsMenuOpen(true)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 font-bold border border-slate-200">
             {currentUser?.charAt(0).toUpperCase()}
-          </div>
+          </button>
         </div>
       </header>
 
@@ -186,6 +198,43 @@ const App: React.FC = () => {
           {renderView()}
         </div>
       </main>
+
+      {/* Identity Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-xl w-full shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+              <i className="fa-solid fa-cloud-bolt text-2xl"></i>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Business Identity Key</h3>
+            <p className="text-slate-500 font-medium text-sm mb-6 leading-relaxed">Copy this key to sync your account to a new device. On the new device, select <b>"Restore Business"</b> during login and paste this code.</p>
+            
+            <div className="bg-slate-50 p-6 rounded-2xl mb-8 relative border border-slate-100">
+              <textarea 
+                readOnly 
+                value={identityKey} 
+                className="w-full bg-transparent border-none text-[10px] font-mono text-slate-400 h-32 resize-none focus:ring-0"
+              />
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(identityKey);
+                  alert('Identity key copied to clipboard!');
+                }}
+                className="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-xl text-[10px] font-black text-indigo-600 shadow-sm border border-slate-100 hover:bg-indigo-50 transition-all uppercase tracking-widest"
+              >
+                Copy Code
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => setShowSyncModal(false)}
+              className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-lg"
+            >
+              Close Identity Hub
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
@@ -257,6 +306,17 @@ const App: React.FC = () => {
                 </button>
 
                 <button 
+                  onClick={() => { handleShowIdentity(); setIsMenuOpen(false); }}
+                  className="flex items-center space-x-4 p-5 rounded-2xl bg-emerald-50 text-emerald-600 font-black hover:bg-emerald-100"
+                >
+                  <i className="fa-solid fa-fingerprint text-xl"></i>
+                  <div className="text-left">
+                    <p>Business Identity Hub</p>
+                    <p className="text-[10px] uppercase font-bold text-emerald-400">Sync to new devices</p>
+                  </div>
+                </button>
+
+                <button 
                   onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }}
                   className="flex items-center space-x-4 p-5 rounded-2xl bg-indigo-50 text-indigo-600 font-black hover:bg-indigo-100"
                 >
@@ -289,6 +349,15 @@ const App: React.FC = () => {
               <span>{item.label}</span>
             </button>
           ))}
+          <div className="pt-4 mt-4 border-t border-slate-100">
+             <button 
+                onClick={handleShowIdentity}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold transition-all"
+             >
+                <i className="fa-solid fa-fingerprint text-lg w-6"></i>
+                <span>Identity Key</span>
+             </button>
+          </div>
         </div>
         <div className="p-6 border-t border-slate-100">
            <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold">
