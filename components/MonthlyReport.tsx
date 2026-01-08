@@ -56,13 +56,13 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
   }, [employees, shifts, selectedMonth, selectedYear]);
 
   const exportToCSV = () => {
-    const headers = ["Employee Name", "Role", "Rate ($/hr)", "Total Hours", "Total Shifts", "Total Wage ($)"];
+    // Removed "Total Shifts" from headers and rows
+    const headers = ["Employee Name", "Role", "Rate ($/hr)", "Total Hours", "Total Wage ($)"];
     const rows = reportData.consolidated.map(item => [
       item.name,
       item.role,
       item.rate,
       item.totalHours.toFixed(1),
-      item.shiftCount,
       item.totalWages.toFixed(2)
     ]);
 
@@ -144,14 +144,13 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
                 <th className="px-6 py-4 font-semibold">Role</th>
                 <th className="px-6 py-4 font-semibold">Rate</th>
                 <th className="px-6 py-4 font-semibold">Total Hours</th>
-                <th className="px-6 py-4 font-semibold">Shifts</th>
                 <th className="px-6 py-4 font-semibold text-right">Total Wage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {reportData.consolidated.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">No shifts recorded for this period.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No shifts recorded for this period.</td>
                 </tr>
               ) : (
                 reportData.consolidated.map(item => (
@@ -163,9 +162,6 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
                     <td className="px-6 py-4 text-slate-500 text-sm">${item.rate}/hr</td>
                     <td className="px-6 py-4">
                       <span className="text-slate-700 font-medium">{item.totalHours.toFixed(1)} hrs</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="bg-slate-100 text-slate-500 text-xs px-2 py-1 rounded-md">{item.shiftCount}</span>
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-indigo-600">
                       ${item.totalWages.toFixed(2)}
@@ -179,7 +175,6 @@ const MonthlyReport: React.FC<MonthlyReportProps> = ({ employees, shifts }) => {
                 <tr>
                   <td colSpan={3} className="px-6 py-4 text-right uppercase text-xs tracking-widest text-slate-400">Monthly Totals</td>
                   <td className="px-6 py-4">{reportData.grandTotalHours.toFixed(1)} hrs</td>
-                  <td></td>
                   <td className="px-6 py-4 text-right text-indigo-700 font-extrabold text-lg">
                     ${reportData.grandTotalWages.toFixed(2)}
                   </td>
