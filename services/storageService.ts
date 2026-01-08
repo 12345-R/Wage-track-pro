@@ -11,12 +11,9 @@ export const storageService = {
     const userStorageKey = `${STORAGE_KEY}_${username}`;
     const saved = localStorage.getItem(userStorageKey);
     
-    // Check for version update and handle refresh logic if needed
     const lastVersion = localStorage.getItem(VERSION_KEY);
     if (lastVersion !== APP_VERSION) {
-      console.log(`New version detected: ${APP_VERSION}. Syncing assets...`);
       localStorage.setItem(VERSION_KEY, APP_VERSION);
-      // In a real environment, this might trigger a cache bust
     }
 
     if (!saved) {

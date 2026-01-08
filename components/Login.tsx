@@ -84,7 +84,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (user) {
       onLoginSuccess(user.email);
     } else {
-      setError('Invalid email or password. Please try again.');
+      setError('Invalid email or password on this device.');
     }
   };
 
@@ -157,20 +157,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
-      {/* FULL SCREEN BACKGROUND IMAGE WITH LIGHT COLORS */}
       <div className="absolute inset-0 z-0">
         <img 
           src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=2000" 
           alt="Bright Minimalist Office" 
           className="w-full h-full object-cover"
         />
-        {/* LIGHT OVERLAYS */}
         <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-50/50 via-transparent to-white/30"></div>
       </div>
 
       <div className="w-full max-w-lg relative z-10">
-        {/* LOGO AREA */}
         <div className="flex flex-col items-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
           <div className="bg-white p-4 rounded-3xl shadow-xl shadow-indigo-100 border border-indigo-50 mb-4">
             <i className="fa-solid fa-calculator text-4xl text-indigo-600"></i>
@@ -181,22 +178,20 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-2">Enterprise Access</p>
         </div>
 
-        {/* GLASSMORPHIC FORM CONTAINER */}
         <div className="bg-white/60 backdrop-blur-2xl p-8 md:p-12 rounded-[3.5rem] shadow-2xl shadow-indigo-200/40 border border-white relative">
-          {/* Header Tabs */}
           {(mode === 'login' || mode === 'register') && (
             <div className="flex bg-slate-200/40 p-1.5 rounded-2xl mb-10 border border-white/50">
               <button 
                 onClick={() => { setMode('login'); resetFields(); }}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-tighter transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Sign In
               </button>
               <button 
                 onClick={() => { setMode('register'); resetFields(); }}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-tighter transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Join Now
+                New Setup
               </button>
             </div>
           )}

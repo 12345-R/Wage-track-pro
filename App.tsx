@@ -115,14 +115,12 @@ const App: React.FC = () => {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Primary navigation for bottom bar
   const bottomNavItems = [
     { id: 'dashboard', label: 'Home', icon: 'fa-house' },
     { id: 'shifts', label: 'Time Clock', icon: 'fa-clock-rotate-left' },
     { id: 'reports', label: 'Report', icon: 'fa-file-invoice-dollar' },
   ];
 
-  // Full navigation for desktop sidebar
   const sidebarNavItems = [
     { id: 'dashboard', label: 'Home', icon: 'fa-house' },
     { id: 'employees', label: 'Employees', icon: 'fa-users' },
@@ -189,7 +187,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation - Decluttered with Employees moved to Menu */}
+      {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {bottomNavItems.map((item) => (
@@ -232,78 +230,51 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Slide-up Menu Modal - Now contains Employees */}
+      {/* Mobile Slide-up Menu */}
       {isMenuOpen && (
         <>
-          <div 
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] animate-in fade-in duration-300"
-            onClick={() => setIsMenuOpen(false)}
-          ></div>
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] z-[120] p-8 animate-in slide-in-from-bottom-full duration-500 shadow-2xl">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110]" onClick={() => setIsMenuOpen(false)}></div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] z-[120] p-8 shadow-2xl">
             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
-            
             <div className="space-y-6">
-              <div className="flex items-center space-x-4 mb-8">
-                <div className="w-14 h-14 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-indigo-100">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-14 h-14 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black">
                   {currentUser?.charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-lg font-black text-slate-900 truncate max-w-[200px]">{currentUser}</p>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Business Administrator</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Business Admin</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {/* Employees moved here for mobile */}
                 <button 
                   onClick={() => { setCurrentView('employees'); setIsMenuOpen(false); }}
-                  className={`flex items-center space-x-4 p-5 rounded-2xl font-black transition-all ${
-                    currentView === 'employees' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-                  }`}
+                  className="flex items-center space-x-4 p-5 rounded-2xl bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"
                 >
                   <i className="fa-solid fa-users text-xl"></i>
-                  <div className="flex flex-col items-start">
-                    <span className="text-base">Team Management</span>
-                    <span className={`text-[10px] uppercase tracking-widest font-bold ${currentView === 'employees' ? 'text-indigo-100' : 'text-slate-400'}`}>Edit Staff & Rates</span>
-                  </div>
+                  <span>Team Management</span>
                 </button>
 
                 <button 
                   onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }}
-                  className={`flex items-center space-x-4 p-5 rounded-2xl font-black transition-all ${
-                    currentView === 'ai-insights' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                  }`}
+                  className="flex items-center space-x-4 p-5 rounded-2xl bg-indigo-50 text-indigo-600 font-black hover:bg-indigo-100"
                 >
                   <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
-                  <span>AI Analytics & Insights</span>
-                </button>
-                
-                <button 
-                  onClick={() => { setIsMenuOpen(false); }}
-                  className="flex items-center space-x-4 p-5 rounded-2xl bg-slate-50 text-slate-600 font-bold transition-all hover:bg-slate-100"
-                >
-                  <i className="fa-solid fa-gear text-xl"></i>
-                  <span>Account Settings</span>
+                  <span>AI Analytics</span>
                 </button>
 
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center space-x-4 p-5 rounded-2xl bg-rose-50 text-rose-600 font-bold transition-all hover:bg-rose-100"
-                >
+                <button onClick={handleLogout} className="flex items-center space-x-4 p-5 rounded-2xl bg-rose-50 text-rose-600 font-bold">
                   <i className="fa-solid fa-right-from-bracket text-xl"></i>
-                  <span>Sign Out Account</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
-
-              <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] pt-4">
-                WageTrack Pro • v{APP_VERSION}
-              </p>
             </div>
           </div>
         </>
       )}
 
-      {/* Desktop Navigation */}
+      {/* Desktop Sidebar Navigation */}
       <nav className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 z-50 flex-col">
         <div className="p-6 space-y-2 flex-1">
           {sidebarNavItems.map((item) => (
@@ -311,9 +282,7 @@ const App: React.FC = () => {
               key={item.id}
               onClick={() => setCurrentView(item.id as View)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-bold ${
-                currentView === item.id 
-                  ? 'bg-indigo-50 text-indigo-600' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                currentView === item.id ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
               }`}
             >
               <i className={`fa-solid ${item.icon} text-lg w-6`}></i>
@@ -322,10 +291,7 @@ const App: React.FC = () => {
           ))}
         </div>
         <div className="p-6 border-t border-slate-100">
-           <button 
-             onClick={handleLogout}
-             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-all"
-           >
+           <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold">
               <i className="fa-solid fa-right-from-bracket text-lg w-6"></i>
               <span>Logout</span>
            </button>
