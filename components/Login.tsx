@@ -9,6 +9,40 @@ interface LoginProps {
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset-confirm' | 'otp-verify';
 
+interface PasswordInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  label?: string;
+  showPassword:  boolean;
+  onToggleVisible: () => void;
+}
+
+// DEFINED OUTSIDE TO PREVENT RE-RENDERING REMOUNT TRAPS
+const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, placeholder, label, showPassword, onToggleVisible }) => (
+  <div className="relative">
+    {label && <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>}
+    <div className="relative">
+      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+      <input 
+        type={showPassword ? 'text' : 'password'} 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-12 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
+        placeholder={placeholder}
+        required
+      />
+      <button 
+        type="button"
+        onClick={onToggleVisible}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+      >
+        <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+      </button>
+    </div>
+  </div>
+);
+
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -138,29 +172,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const PasswordInput = ({ value, onChange, placeholder, label }: { value: string, onChange: (v: string) => void, placeholder: string, label?: string }) => (
-    <div className="relative">
-      {label && <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>}
-      <div className="relative">
-        <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-        <input 
-          type={showPassword ? 'text' : 'password'} 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 pl-11 pr-12 py-4 rounded-2xl focus:outline-none transition-all font-medium text-slate-700"
-          placeholder={placeholder}
-          required
-        />
-        <button 
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
-        >
-          <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-        </button>
-      </div>
-    </div>
-  );
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
     <div className="min-h-screen bg-white flex overflow-hidden">
@@ -314,7 +326,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       />
                       <button 
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={togglePasswordVisibility}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
                       >
                         <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
@@ -349,12 +361,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     value={password} 
                     onChange={setPassword} 
                     placeholder="••••••••" 
+                    showPassword={showPassword}
+                    onToggleVisible={togglePasswordVisibility}
                   />
                   <PasswordInput 
                     label="Confirm Password" 
                     value={confirmPassword} 
                     onChange={setConfirmPassword} 
                     placeholder="••••••••" 
+                    showPassword={showPassword}
+                    onToggleVisible={togglePasswordVisibility}
                   />
                   <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 mt-4">
                     Send Verification Code
@@ -434,12 +450,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     value={password} 
                     onChange={setPassword} 
                     placeholder="••••••••" 
+                    showPassword={showPassword}
+                    onToggleVisible={togglePasswordVisibility}
                   />
                   <PasswordInput 
                     label="Confirm New Password" 
                     value={confirmPassword} 
                     onChange={setConfirmPassword} 
                     placeholder="••••••••" 
+                    showPassword={showPassword}
+                    onToggleVisible={togglePasswordVisibility}
                   />
                   <button type="submit" className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 mt-4">
                     Restore Access
