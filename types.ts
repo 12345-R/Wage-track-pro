@@ -5,15 +5,15 @@ export interface Employee {
   role: string;
   hourlyRate: number;
   avatar: string;
-  emoji?: string; // Optional emoji identifier
+  emoji?: string;
 }
 
 export interface Shift {
   id: string;
   employeeId: string;
-  date: string; // ISO Date String
-  clockIn: string; // HH:mm
-  clockOut?: string; // HH:mm
+  date: string;
+  clockIn: string;
+  clockOut?: string;
   totalHours: number;
   earnedWage: number;
 }
@@ -27,6 +27,7 @@ export interface User {
 export interface AppState {
   employees: Employee[];
   shifts: Shift[];
+  updatedAt: number; // For sync conflict resolution
 }
 
 export type View = 'dashboard' | 'employees' | 'shifts' | 'ai-insights' | 'reports';
