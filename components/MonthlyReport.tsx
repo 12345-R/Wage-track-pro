@@ -13,40 +13,32 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
   const [scope, setScope] = useState<ReportScope>('team');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   
-  // Custom date range states - Default to start of current month to today
   const today = new Date();
   const firstOfOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   
   const [startDate, setStartDate] = useState(firstOfOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
 
-  // Filtering range derived directly from calendar inputs
   const activeRange = useMemo(() => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
-    // Set hours to start/end of day for accurate filtering
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
-    
     return { start, end };
   }, [startDate, endDate]);
 
   const reportData = useMemo(() => {
     const { start, end } = activeRange;
     
-    // Filter shifts within range
     const filteredShifts = shifts.filter(s => {
       const d = new Date(s.date);
       return d >= start && d <= end;
     });
 
-    // If individual scope, filter further
     const scopeShifts = scope === 'individual' && selectedEmployeeId 
       ? filteredShifts.filter(s => s.employeeId === selectedEmployeeId)
       : filteredShifts;
 
-    // Team Summary data
     const consolidated = employees.map(emp => {
       const empShifts = filteredShifts.filter(s => s.employeeId === emp.id);
       const totalHours = empShifts.reduce((sum, s) => sum + s.totalHours, 0);
@@ -71,7 +63,7 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
     return { consolidated, scopeShifts, grandTotalHours, grandTotalWages };
   }, [employees, shifts, activeRange, scope, selectedEmployeeId]);
 
-  const exportCSV = () => {
+  const exportCSV = (specificEmployeeName?: string) => {
     const headers = ["Date", "Employee", "Clock In", "Clock Out", "Hours", "Wage ($)"];
     const rows = reportData.scopeShifts.map(s => {
       const emp = employees.find(e => e.id === s.employeeId);
@@ -90,7 +82,10 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `WageTrack_Report_${startDate}_to_${endDate}.csv`;
+    const filename = specificEmployeeName 
+      ? `WageTrack_${specificEmployeeName.replace(/\s/g, '_')}_${startDate}_to_${endDate}.csv`
+      : `WageTrack_Team_Report_${startDate}_to_${endDate}.csv`;
+    link.download = filename;
     link.click();
   };
 
@@ -168,7 +163,7 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
           {/* Section 3: Actions */}
           <div className="lg:col-span-3 flex flex-col justify-end space-y-3">
              <button 
-              onClick={exportCSV}
+              onClick={() => exportCSV(scope === 'individual' ? selectedEmployee?.name : undefined)}
               className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-50 text-sm"
              >
                <i className="fa-solid fa-file-csv mr-2"></i>Export CSV
@@ -264,7 +259,7 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
           </div>
         ) : (
           <div>
-            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+            <div className="p-8 border-b border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-lg shadow-indigo-100">
                   {selectedEmployee?.emoji || '👤'}
@@ -274,9 +269,20 @@ const MonthlyReport: React.FC<ReportProps> = ({ employees, shifts }) => {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedEmployee?.role || 'Individual Audit Ledger'}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Rate</p>
-                <p className="text-xl font-black text-indigo-600">${selectedEmployee?.hourlyRate || 0}/hr</p>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Rate</p>
+                  <p className="text-xl font-black text-indigo-600">${selectedEmployee?.hourlyRate || 0}/hr</p>
+                </div>
+                {selectedEmployee && (
+                  <button 
+                    onClick={() => exportCSV(selectedEmployee.name)}
+                    className="bg-indigo-50 text-indigo-600 px-4 py-3 rounded-2xl font-black text-xs hover:bg-indigo-100 transition-all uppercase tracking-widest flex items-center space-x-2"
+                  >
+                    <i className="fa-solid fa-file-export"></i>
+                    <span>Export My CSV</span>
+                  </button>
+                )}
               </div>
             </div>
             

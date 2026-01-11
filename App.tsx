@@ -31,7 +31,6 @@ const App: React.FC = () => {
           setCurrentUser(atob(token).split(':')[0]);
           setSyncStatus('live');
         } else {
-          // Token invalid or expired
           handleLogout();
         }
       }
@@ -39,17 +38,16 @@ const App: React.FC = () => {
     initSession();
   }, [token]);
 
-  // 2. BACKGROUND POLLING (Fetch changes from other devices)
+  // 2. BACKGROUND POLLING
   useEffect(() => {
     if (!token) return;
 
     const pollInterval = setInterval(async () => {
       const remoteData = await storageService.fetchData(token);
       if (remoteData && remoteData.version > state.version) {
-        console.log("Auto-sync: Remote version is newer. Updating local state.");
         setState(remoteData);
       }
-    }, 10000); // Poll every 10s
+    }, 15000); // Poll every 15s
 
     return () => clearInterval(pollInterval);
   }, [token, state.version]);
@@ -70,7 +68,6 @@ const App: React.FC = () => {
       setState(response.latestState);
       setSyncStatus('live');
     } else if (response.latestState) {
-      // CONFLICT RESOLUTION: Server rejected update because it's newer
       setSyncStatus('conflict');
       setState(response.latestState);
       setTimeout(() => setSyncStatus('live'), 2000);
@@ -95,8 +92,6 @@ const App: React.FC = () => {
 
   const updateState = (updater: (prev: AppState) => AppState) => {
     const nextState = updater(state);
-    // Note: We don't increment version here; the server increments it upon a successful push.
-    // We update local state immediately for UI responsiveness, then sync.
     setState(nextState);
     
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
@@ -145,7 +140,7 @@ const App: React.FC = () => {
           <span className="text-lg font-black tracking-tight text-slate-800">WageTrack<span className="text-indigo-600">Pro</span></span>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
           <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-all duration-300 ${
             syncStatus === 'syncing' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 
             syncStatus === 'conflict' ? 'bg-amber-50 border-amber-200 text-amber-600' :
@@ -158,24 +153,21 @@ const App: React.FC = () => {
               syncStatus === 'error' ? 'fa-circle-exclamation' :
               'fa-cloud-check'
             } text-[10px]`}></i>
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'conflict' ? 'Auto-Merged' : syncStatus === 'error' ? 'Sync Error' : 'Global Hub'}
+            <span className="hidden xs:inline text-[10px] font-black uppercase tracking-widest">
+              {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'conflict' ? 'Auto-Merged' : syncStatus === 'error' ? 'Sync Error' : 'Verified'}
             </span>
           </div>
-          <div className="hidden sm:flex flex-col text-right pr-4 border-r border-slate-100">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">{currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-             <p className="text-sm font-black text-slate-800 tabular-nums">{currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}</p>
-          </div>
-          <button onClick={() => setIsMenuOpen(true)} className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-200 border border-white transition-all active:scale-90">
+          {/* Desktop User Initial */}
+          <div className="hidden md:flex w-10 h-10 rounded-2xl bg-indigo-600 text-white items-center justify-center font-black shadow-lg shadow-indigo-200 border border-white">
             {currentUser?.charAt(0).toUpperCase() || '?'}
-          </button>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full transition-all duration-300">
         <header className="mb-6 px-1">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">{currentView.replace('-', ' ')}</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Multi-Device Verified Profile</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Secured Business Cloud</p>
         </header>
         
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -187,21 +179,34 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      {/* REFINED MOBILE BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-[100] px-1 py-3 md:hidden">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {[
             { id: 'dashboard', label: 'Home', icon: 'fa-house' },
-            { id: 'shifts', label: 'Time Clock', icon: 'fa-clock-rotate-left' },
+            { id: 'employees', label: 'Team', icon: 'fa-users' },
+            { id: 'shifts', label: 'Clock', icon: 'fa-clock-rotate-left' },
             { id: 'reports', label: 'Report', icon: 'fa-file-invoice-dollar' },
           ].map(item => (
-            <button key={item.id} onClick={() => { setCurrentView(item.id as View); setIsMenuOpen(false); }} className={`flex flex-col items-center space-y-1 ${currentView === item.id ? 'text-white' : 'text-slate-400'}`}>
-              <div className={`w-16 h-11 rounded-2xl flex items-center justify-center ${currentView === item.id ? 'bg-white/10 shadow-lg' : ''}`}><i className={`fa-solid ${item.icon} text-2xl`}></i></div>
-              <span className="text-[11px] font-bold tracking-tight">{item.label}</span>
+            <button 
+              key={item.id} 
+              onClick={() => { setCurrentView(item.id as View); setIsMenuOpen(false); }} 
+              className={`flex flex-col items-center space-y-1 ${currentView === item.id && !isMenuOpen ? 'text-white' : 'text-slate-400'}`}
+            >
+              <div className={`w-14 h-11 rounded-2xl flex items-center justify-center ${currentView === item.id && !isMenuOpen ? 'bg-white/10 shadow-lg' : ''}`}>
+                <i className={`fa-solid ${item.icon} text-xl`}></i>
+              </div>
+              <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
             </button>
           ))}
-          <button onClick={() => setIsMenuOpen(true)} className={`flex flex-col items-center space-y-1 ${isMenuOpen ? 'text-white' : 'text-slate-400'}`}>
-            <div className={`w-16 h-11 rounded-2xl flex items-center justify-center ${isMenuOpen ? 'bg-white/10' : ''}`}><i className="fa-solid fa-bars text-2xl"></i></div>
-            <span className="text-[11px] font-bold tracking-tight">Menu</span>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            className={`flex flex-col items-center space-y-1 ${isMenuOpen ? 'text-white' : 'text-slate-400'}`}
+          >
+            <div className={`w-14 h-11 rounded-2xl flex items-center justify-center ${isMenuOpen ? 'bg-indigo-500/30' : ''}`}>
+              <i className="fa-solid fa-ellipsis text-xl"></i>
+            </div>
+            <span className="text-[10px] font-bold tracking-tight">More</span>
           </button>
         </div>
       </nav>
@@ -209,19 +214,29 @@ const App: React.FC = () => {
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110]" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-[120] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-10"></div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-[120] p-8 pb-12 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-8 p-4 bg-indigo-50 rounded-3xl border border-indigo-100">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black">{currentUser?.charAt(0).toUpperCase() || '?'}</div>
                 <div>
                   <p className="font-black text-slate-900 truncate max-w-[200px]">{currentUser || 'Account'}</p>
-                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Global Session Active</p>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Enterprise Hub Active</p>
                 </div>
               </div>
-              <button onClick={() => { setCurrentView('employees'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"><i className="fa-solid fa-users text-xl text-indigo-500"></i><span>Team Management</span></button>
-              <button onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all"><i className="fa-solid fa-wand-magic-sparkles text-xl text-indigo-500"></i><span>AI Analytics</span></button>
-              <button onClick={handleLogout} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all"><i className="fa-solid fa-right-from-bracket text-xl"></i><span>Sign Out</span></button>
+              
+              <button onClick={() => { setCurrentView('ai-insights'); setIsMenuOpen(false); }} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-slate-50 text-slate-700 font-black hover:bg-slate-100 transition-all">
+                <i className="fa-solid fa-wand-magic-sparkles text-xl text-indigo-500"></i>
+                <div className="text-left">
+                  <p>AI Analytics</p>
+                  <p className="text-[10px] font-medium text-slate-400">Powered by Gemini Pro</p>
+                </div>
+              </button>
+              
+              <button onClick={handleLogout} className="w-full flex items-center space-x-4 p-5 rounded-[1.5rem] bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all mt-4">
+                <i className="fa-solid fa-right-from-bracket text-xl"></i>
+                <span>Sign Out of Hub</span>
+              </button>
             </div>
           </div>
         </>
